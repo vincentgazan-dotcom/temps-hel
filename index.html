@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hel van het Noorden 2026 · Chronométrage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Mise en page : bandeau bleu nuit comme headofnantes.com, titre condensé, onglets d'épreuves, une colonne de passages par point de chrono, tableau des temps.
+   Couleurs : modifier les variables ci-dessous si besoin. La page garde un seul habillage sombre, comme le site. */
+:root {
+  --nuit: #0b1a33;       /* fond principal */
+  --nuit-2: #0f213f;     /* bandeaux, cartes */
+  --nuit-3: #16294b;     /* survol, lignes alternées */
+  --or: #d4a53f;         /* accent */
+  --creme: #f4f1e8;      /* texte */
+  --brume: #9aa6b8;      /* texte secondaire */
+  --trait: #22365a;      /* filets */
+  --ok: #6cc59a;         /* arrivé */
+  --titre: "Anton", "Oswald", "Arial Narrow", Impact, sans-serif;
+  --mono: "Space Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --texte: "Source Sans 3", "Source Sans Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--nuit); color: var(--creme); font: 16px/1.45 var(--texte); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Bandeau du haut */
+.top { background: var(--nuit-2); border-bottom: 1px solid var(--trait); }
+.top .wrap { padding-block: 12px; display: flex; align-items: center; gap: 14px; }
+.logo { display: grid; place-items: center; width: 42px; height: 42px; border: 1.5px solid var(--or); color: var(--or); font: 15px var(--titre); letter-spacing: .02em; flex: none; }
+.logo-club { margin-left: auto; height: 48px; width: auto; background: #f7f7f7; padding: 3px 6px; flex: none; }
+@media (max-width: 560px) { .logo-club { height: 38px; padding: 2px 4px; } }
+.marque b { display: block; font: 18px/1.1 var(--titre); letter-spacing: .04em; text-transform: uppercase; }
+.marque span { font: 10.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--brume); }
+
+/* Titre + horloge */
+.hero .wrap { padding-block: 34px 26px; display: flex; flex-wrap: wrap; gap: 20px 40px; align-items: flex-end; justify-content: space-between; }
+.hero-texte { min-width: 0; }
+.surtitre { display: flex; align-items: center; gap: 12px; font: 11.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--or); }
+.surtitre::before { content: ""; width: 36px; height: 1px; background: var(--or); flex: none; }
+h1 { font: clamp(44px, 10vw, 92px)/.92 var(--titre); text-transform: uppercase; margin: 14px 0 0; letter-spacing: .005em; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--or); }
+.direct { display: inline-flex; align-items: center; gap: 9px; margin-top: 18px; background: var(--or); color: var(--nuit); font: 700 12px var(--mono); letter-spacing: .18em; padding: 7px 12px 6px; }
+.direct i { width: 8px; height: 8px; border-radius: 50%; background: var(--nuit); animation: battement 1.3s infinite; }
+@keyframes battement { 50% { opacity: .2 } }
+.horloge { text-align: right; }
+.horloge small { display: block; font: 10.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--brume); }
+.horloge b { display: block; font: clamp(40px, 8vw, 64px)/1 var(--titre); font-variant-numeric: tabular-nums; letter-spacing: .02em; margin-block: 6px 4px; }
+.horloge span { font-size: 14px; color: var(--brume); }
+
+.demo { border: 1px dashed var(--or); color: var(--creme); padding: 10px 14px; font-size: 14px; margin-bottom: 18px; }
+.demo b { color: var(--or); font: 700 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; margin-right: 8px; }
+
+/* Sélecteur de catégorie */
+.barre { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; border-top: 1px solid var(--trait); padding-block: 18px 4px; }
+.barre label { font: 10.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--or); }
+.choix-cat { position: relative; min-width: 0; max-width: 100%; }
+.choix-cat::after { content: ""; position: absolute; right: 16px; top: 50%; width: 9px; height: 9px; border-right: 2px solid var(--nuit); border-bottom: 2px solid var(--nuit); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+#categorie { appearance: none; -webkit-appearance: none; max-width: 100%; font: 22px/1.1 var(--titre); letter-spacing: .04em; text-transform: uppercase; color: var(--nuit); background: var(--or); border: 0; border-radius: 0; padding: 10px 46px 9px 14px; cursor: pointer; }
+#categorie option { font: 16px var(--texte); text-transform: none; color: var(--creme); background: var(--nuit-2); }
+#categorie:focus-visible { outline: 2px solid var(--creme); outline-offset: 2px; }
+.selecteur-ligne { display: flex; gap: 8px; align-items: stretch; min-width: 0; max-width: 100%; }
+.fleche { flex: none; width: 46px; font: 700 20px var(--texte); color: var(--creme); background: transparent; border: 1px solid var(--trait); cursor: pointer; }
+.fleche:hover:not(:disabled) { border-color: var(--or); color: var(--or); }
+.fleche:disabled { opacity: .35; cursor: default; }
+.fleche:focus-visible { outline: 2px solid var(--creme); outline-offset: 2px; }
+@media (max-width: 560px) { .barre { flex-direction: column; align-items: stretch; } .selecteur-ligne { width: 100%; } .choix-cat { flex: 1; } #categorie { width: 100%; font-size: 18px; } .fleche { width: 40px; } }
+
+/* Onglets de vue + PDF */
+.vues { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 16px; border-top: 1px solid var(--trait); }
+.vues button { font: 700 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--creme); background: transparent; border: 1px solid var(--trait); padding: 9px 14px 8px; cursor: pointer; }
+.vues button:hover { border-color: var(--or); }
+.vues button[aria-pressed="true"] { background: var(--or); border-color: var(--or); color: var(--nuit); }
+.vues .pdf { margin-left: auto; border-color: var(--or); color: var(--or); }
+.vues button:focus-visible { outline: 2px solid var(--creme); outline-offset: 2px; }
+@media (max-width: 560px) { .vues .pdf { margin-left: 0; } }
+#vue-course .barre { border-top: 0; }
+.bloc-epreuve { margin-top: 22px; }
+.epreuve-titre { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; border-bottom: 2px solid var(--or); padding-bottom: 6px; }
+.epreuve-titre b { font: 22px/1.1 var(--titre); letter-spacing: .03em; text-transform: uppercase; }
+.epreuve-titre span { font: 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brume); }
+.bloc-epreuve .carte { margin-top: 0; border-top: 0; }
+
+/* Réglage distance et prono */
+.lien-prono { font: 700 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--or); background: none; border: 0; padding: 0; cursor: pointer; }
+.lien-prono:hover { text-decoration: underline; }
+.lien-prono:focus-visible { outline: 2px solid var(--creme); outline-offset: 2px; }
+.reglage { border: 1px solid var(--or); background: var(--nuit-2); padding: 12px 14px; margin-top: 8px; }
+.reglage-titre { font: 700 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--or); margin-bottom: 10px; }
+.reglage-champs { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; }
+.reglage label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--brume); }
+.reglage input:not([type]), .reglage input[inputmode] { width: 150px; font: 700 16px var(--texte); color: var(--nuit); background: var(--creme); border: 0; padding: 8px 10px; }
+.reglage label.case { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 9px; color: var(--creme); }
+.reglage label.case input { width: 18px; height: 18px; accent-color: var(--or); }
+.reglage-sep { border-top: 1px solid var(--trait); padding-top: 12px; margin-top: 14px; }
+.reglage .principal, .reglage .secondaire { font: 700 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 10px 14px; cursor: pointer; border: 1px solid var(--or); }
+.reglage .principal { background: var(--or); color: var(--nuit); }
+.reglage .secondaire { background: transparent; color: var(--creme); border-color: var(--trait); }
+.reglage-info { font-size: 13px; color: var(--brume); margin-top: 10px; }
+.reglage-info b { color: var(--creme); }
+
+
+/* Passages : une colonne par point de chrono, équipages classés de haut en bas */
+.section-titre { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; font: 10.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--brume); margin-top: 18px; }
+.section-titre span + span { letter-spacing: .08em; text-transform: none; font-family: var(--texte); font-size: 13px; }
+.points { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(236px, 1fr); gap: 0; border: 1px solid var(--trait); background: var(--nuit-2); margin-top: 8px; overflow-x: auto; scrollbar-width: thin; align-items: start; }
+.colonne { border-right: 1px solid var(--trait); min-width: 0; }
+.colonne:last-child { border-right: 0; }
+.colonne-nom { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 12px 12px 10px; border-bottom: 1px solid var(--or); }
+.colonne-nom b { font: 22px/1 var(--titre); letter-spacing: .03em; text-transform: uppercase; }
+.colonne-nom small { font: 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brume); white-space: nowrap; }
+.colonne.arrivee .colonne-nom b { color: var(--or); }
+.puce { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; column-gap: 8px; align-items: center; padding: 7px 12px 7px 8px; border-bottom: 1px solid var(--trait); border-left: 3px solid transparent; }
+.puce:last-child { border-bottom: 0; }
+.puce .pr { font: 22px/1 var(--titre); text-align: center; }
+.puce .pe { font: 700 12px var(--mono); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.puce .pt { text-align: right; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.15; }
+.puce .pt span { display: block; font-weight: 400; font-size: 12px; color: var(--brume); }
+.puce.premier .pr { color: var(--or); }
+.puce.recent { border-left-color: var(--or); background: rgba(212,165,63,.08); }
+.puce.neuf { animation: eclair 2.6s ease-out; }
+.piste-vide { color: var(--brume); font-size: 14px; padding: 12px; }
+.filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.filtres > span { font: 10.5px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--brume); margin-right: 6px; }
+.filtre { font: 700 12px var(--mono); letter-spacing: .06em; color: var(--brume); background: transparent; border: 1px dashed var(--trait); padding: 6px 10px 5px; cursor: pointer; }
+.filtre[aria-pressed="true"] { color: var(--creme); border: 1px solid var(--or); }
+.filtre[aria-pressed="true"]::before { content: "✓ "; color: var(--or); }
+.filtre:hover { border-color: var(--or); }
+.filtre.tous { border-style: solid; color: var(--or); }
+.filtre:focus-visible { outline: 2px solid var(--creme); outline-offset: 2px; }
+@media (max-width: 560px) { .points { grid-auto-columns: minmax(220px, 82%); } }
+
+/* Tableau */
+.carte { background: var(--nuit-2); border: 1px solid var(--trait); margin-top: 8px; overflow-x: auto; }
+.points { margin-bottom: 26px; }
+table { width: 100%; border-collapse: collapse; min-width: 680px; font-variant-numeric: tabular-nums; }
+th { font: 400 10.5px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--brume); text-align: left; padding: 13px 12px; border-bottom: 1px solid var(--or); white-space: nowrap; }
+th.num, td.num { text-align: right; }
+td { padding: 11px 12px; border-bottom: 1px solid var(--trait); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--nuit-3); }
+.rang { font: 26px var(--titre); width: 48px; }
+tr.podium .rang { color: var(--or); }
+.dossard { display: inline-block; min-width: 38px; text-align: center; font: 700 13px var(--mono); border: 1px solid var(--trait); background: var(--nuit); padding: 3px 5px; }
+.club { font-weight: 700; }
+.detail { color: var(--brume); font-size: 13px; white-space: nowrap; }
+.t { font-weight: 600; white-space: nowrap; }
+.r { color: var(--brume); font-size: 12px; margin-left: 5px; }
+.r1 { color: var(--or); font-weight: 700; }
+.r sup { font-size: .75em; }
+.tr { display: block; color: var(--brume); font-size: 12.5px; white-space: nowrap; }
+.vide { color: var(--brume); opacity: .45; }
+.ecart { color: var(--brume); white-space: nowrap; }
+.prono { color: var(--brume); white-space: nowrap; }
+.pct { font-weight: 700; color: var(--or); white-space: nowrap; }
+.etat { font: 700 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 4px 8px; white-space: nowrap; border: 1px solid currentColor; }
+.etat.course { color: var(--or); }
+.etat.arrive { color: var(--ok); }
+.etat.attente { color: var(--brume); border-color: var(--trait); }
+.etat.hors { color: #e58a7a; }
+.message { padding: 28px 16px; text-align: center; color: var(--brume); }
+tr.neuf td { animation: eclair 2.6s ease-out; }
+@keyframes eclair { from { background: rgba(212,165,63,.2); } to { background: transparent; } }
+
+/* Colonnes Rg, N° et Équipage figées : elles restent visibles quand on fait défiler les temps vers la droite */
+.carte th:nth-child(-n+3), .carte td:nth-child(-n+3):not(.message) { position: sticky; z-index: 1; background: var(--nuit-2); }
+.carte th:nth-child(1), .carte td:nth-child(1) { left: 0; width: 48px; min-width: 48px; }
+.carte th:nth-child(2), .carte td:nth-child(2) { left: 48px; width: 64px; min-width: 64px; }
+.carte th:nth-child(3), .carte td:nth-child(3) { left: 112px; max-width: 280px; box-shadow: 6px 0 8px -6px rgba(0,0,0,.6); border-right: 1px solid var(--trait); }
+.carte td:nth-child(3) .club, .carte td:nth-child(3) .detail { overflow: hidden; text-overflow: ellipsis; }
+.carte tbody tr:hover td:nth-child(-n+3) { background: var(--nuit-3); }
+.carte tr.neuf td:nth-child(-n+3) { animation-name: eclair-fige; }
+@keyframes eclair-fige { from { background: #363b3f; } to { background: var(--nuit-2); } }
+@media (max-width: 560px) {
+  .carte th:nth-child(1), .carte td:nth-child(1) { width: 38px; min-width: 38px; padding-inline: 8px; }
+  .carte th:nth-child(2), .carte td:nth-child(2) { left: 38px; width: 54px; min-width: 54px; padding-inline: 6px; }
+  .carte th:nth-child(3), .carte td:nth-child(3) { left: 92px; max-width: 130px; padding-inline: 8px; }
+  .carte .rang { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { tr.neuf td, .puce.neuf, .direct i { animation: none; } }
+
+.pied { display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between; color: var(--brume); font-size: 13px; padding-block: 0 36px; }
+.pied a { color: var(--or); }
+
+/* Impression / PDF : fond blanc, A4 paysage, uniquement les classements généraux */
+.titre-impression { display: none; }
+@media print {
+  :root { --nuit: #fff; --nuit-2: #fff; --nuit-3: #fff; --or: #0b1a33; --creme: #111; --brume: #555; --trait: #ccc; --ok: #0b1a33; color-scheme: light; }
+  /* Marge de page à 0 : le navigateur n'a plus la place d'imprimer l'adresse et la date en haut et en bas de page.
+     La marge est remise par le padding du body, répété sur chaque page. */
+  @page { size: A4 landscape; margin: 0; }
+  body { font-size: 11px; padding: 9mm 10mm; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .hero, .vues, .barre, .filtres, .lien-prono, .reglage, .points, .section-titre, .pied, .demo, .marque { display: none !important; }
+  .top { background: #fff; border-bottom: 2px solid #0b1a33; } .top .wrap { padding-block: 4px; } .logo { width: 34px; height: 34px; color: #0b1a33; border-color: #0b1a33; }
+  .wrap { max-width: none; padding: 0; }
+  .titre-impression { display: block; font: 16px var(--titre); text-transform: uppercase; letter-spacing: .03em; margin: 6px 0 4px; color: #0b1a33; }
+  .titre-impression small { display: block; font: 400 10px var(--texte); text-transform: none; letter-spacing: 0; color: #555; }
+  .carte { overflow: visible; border: 0; margin: 0; }
+  table { min-width: 0; font-size: 10.5px; }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; }
+  th, td { padding: 4px 6px; }
+  th { border-bottom: 1px solid #0b1a33; }
+  .rang { font-size: 14px; width: 30px; }
+  .dossard { min-width: 0; padding: 1px 4px; font-size: 10px; }
+  .etat { padding: 1px 4px; font-size: 9px; }
+  .detail, .tr, .r { font-size: 9.5px; }
+  tbody tr:hover td { background: none; }
+  tr.neuf td { animation: none; }
+  .carte th, .carte td { position: static !important; box-shadow: none !important; max-width: none !important; }
+  .bloc-epreuve { margin-top: 10px; break-inside: avoid-page; }
+  .epreuve-titre { border-bottom-width: 1px; }
+  .epreuve-titre b { font-size: 14px; }
+}
+@media (max-width: 560px) { .horloge { text-align: left; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="logo" aria-hidden="true">HvhN</div>
+    <div class="marque"><b>Hel van het Noorden</b><span>49ᵉ édition · Groningue · 22 novembre 2026</span></div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-texte">
+      <div class="surtitre">6 km contre-la-montre · Groningue (Pays-Bas) · passages à 2000 m et 4000 m</div>
+      <h1><em>Chronométrage</em></h1>
+      <div class="direct"><i></i>EN DIRECT</div>
+    </div>
+    <div class="horloge">
+      <small>Heure locale</small>
+      <b id="horloge">--:--:--</b>
+      <span id="maj">Chargement des temps…</span>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+  <div class="demo" id="demo" hidden><b>Démonstration</b>Données simulées. Une fois sur votre site, la page affiche les vrais temps Time-Team.</div>
+  <div class="titre-impression" id="titre-impression"></div>
+  <div class="vues" role="group" aria-label="Affichage">
+    <button type="button" data-vue="course" aria-pressed="true">Par course</button>
+    <button type="button" data-vue="tous" aria-pressed="false">Tous les classements</button>
+    <button type="button" id="pdf" class="pdf">⤓ Exporter en PDF</button>
+  </div>
+  <div id="vue-course">
+  <div class="barre">
+    <label for="categorie">Catégorie</label>
+    <div class="selecteur-ligne">
+      <button class="fleche" id="precedente" type="button" aria-label="Catégorie précédente">‹</button>
+      <div class="choix-cat"><select id="categorie"></select></div>
+      <button class="fleche" id="suivante" type="button" aria-label="Catégorie suivante">›</button>
+    </div>
+  </div>
+  <div class="filtres" id="filtres" aria-label="Points de chrono affichés"></div>
+  <div class="section-titre"><span>Classement général</span><button type="button" class="lien-prono" id="ouvrir-prono" aria-expanded="false">✎ Régler la distance et le prono</button></div>
+  <form class="reglage" id="reglage" hidden>
+    <div class="reglage-titre">Toutes les courses</div>
+    <div class="reglage-champs">
+      <label>Distance générale (m)<input id="r-generale" inputmode="numeric" autocomplete="off" placeholder="ex. 6000"></label>
+      <button type="button" id="r-appliquer" class="principal">Appliquer à toutes les courses</button>
+      <button type="button" id="r-generale-effacer" class="secondaire">Effacer</button>
+    </div>
+    <div class="reglage-info" id="r-info-generale"></div>
+    <div class="reglage-titre reglage-sep">Cette course seulement · <span id="r-course"></span></div>
+    <div class="reglage-champs">
+      <label>Distance courue (m)<input id="r-distance" inputmode="numeric" autocomplete="off" placeholder="ex. 6000"></label>
+      <label>Temps prono de la course<input id="r-prono" autocomplete="off" placeholder="ex. 26:30"></label>
+      <label class="case"><input type="checkbox" id="r-aucun"> Pas de prono</label>
+      <button type="submit" class="principal">Enregistrer</button>
+      <button type="button" id="r-effacer" class="secondaire">Effacer le réglage de cette course</button>
+    </div>
+    <div class="reglage-info" id="r-info"></div>
+  </form>
+  <div class="carte">
+    <table>
+      <thead id="thead"></thead>
+      <tbody id="tbody"><tr><td class="message">Chargement des temps…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="section-titre"><span>Passages par point de chrono</span><span>Une colonne par point, classement de haut en bas · trait or = passé dans la dernière minute</span></div>
+  <div class="points" id="points"></div>
+  </div>
+  <div id="vue-tous" hidden><p class="message">Chargement de tous les classements…</p></div>
+  <div class="pied">
+    <span>Actualisation automatique toutes les 10 secondes. Dans le classement général : temps cumulé, rang au point, et entre parenthèses le temps du tronçon depuis le point précédent. % prono = temps pronostique / temps réalisé.</span>
+    <span>Chronométrage : Time-Team · <a href="https://regatta.time-team.nl/hel/2026/" target="_blank" rel="noopener">regatta.time-team.nl</a></span>
+  </div>
+</main>
+
+<script>
+/* ===================== RÉGLAGES =====================
+   La page lit api/connecteur.js (fonction Vercel).
+   Pour changer de course, on ne touche qu'à api/connecteur.js. */
+const CONNECTEUR = "/api/connecteur";
+const INTERVALLE = 10000;   // millisecondes entre deux actualisations
+const DISTANCE_COURSE = 6000;   // distance de la Hel van het Noorden (m), pour le temps pronostique
+
+/* Temps pronostiques sur 2000 m (fichier FichierTempsProno2026.xlsx). Le temps pronostique d'un
+   équipage = ce temps × distance de la course / 2000. Les catégories absentes affichent « – ». */
+const PRONOS = {
+  "U17H1x": "6:42", "U17H2x": "6:10", "U17H4x": "5:42", "U17H2-": "6:19", "U17H4+": "6:06", "U17H8+": "5:28",
+  "U17F1x": "7:21", "U17F2x": "6:49", "U17F4x": "6:17", "U17F2-": "7:00", "U17F4+": "6:45", "U17F8+": "6:04",
+  "U19H1x": "6:42", "U19H2x": "6:10", "U19H4x": "5:42", "U19H2-": "6:19", "U19H4-": "5:47", "U19H4+": "6:06", "U19H8+": "5:28",
+  "U19F1x": "7:21", "U19F2x": "6:49", "U19F4x": "6:17", "U19F2-": "7:00", "U19F4-": "6:26", "U19F4+": "6:45", "U19F8+": "6:04",
+  "U23F1x": "7:12", "U23F2x": "6:41", "U23F4x": "6:09", "U23F2-": "6:51", "U23F4-": "6:18", "U23F4+": "6:37", "U23F8+": "5:56",
+  "U23H1x": "6:34", "U23H2x": "6:02", "U23H4x": "5:35", "U23H2-": "6:12", "U23H4-": "5:40", "U23H8+": "5:21",
+  "SF1x": "7:06", "SF2x": "6:35", "SF4x": "6:03", "SF2-": "6:45", "SF4-": "6:12", "SF8+": "5:51",
+  "SH1x": "6:28", "SH2x": "5:57", "SH4x": "5:30", "SH2-": "6:06", "SH4-": "5:35", "SH8+": "5:16",
+};
+/* ==================================================== */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const hms = d => d.toLocaleTimeString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+// "12:01.89" ou "1:02:03.4" -> secondes ; et l'inverse pour les temps de tronçon
+const secondes = txt => { const m = /^(?:(\d+):)?(\d+):(\d+(?:[.,]\d+)?)$/.exec(String(txt ?? "").trim()); return m ? (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + parseFloat(m[3].replace(",", ".")) : null; };
+const chrono = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = (s % 60).toFixed(2).padStart(5, "0"); return h ? `${h}:${String(m).padStart(2, "0")}:${r}` : `${m}:${r}`; };
+const enTemps = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = Math.round(s % 60);
+  return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(r).padStart(2, "0"); };
+// Catégorie (clé de PRONOS) lue dans le code ou le nom de l'épreuve Time-Team :
+// « SH8+ », « U19H2x », « J18F1x » ou en toutes lettres « Deux de couple Junior U19 Homme ». J15-J16 = U17, J17-J18 = U19.
+function categorie(ev) {
+  const brut = ((ev.code || "") + " " + (ev.nom || "")).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const age = a => /^J1[56]$/.test(a) ? "U17" : /^J1[78]$/.test(a) ? "U19" : /^SENIOR$|^SEN$/.test(a) ? "S" : a;
+  const sexe = x => /^(H|M|HOMME|HOMMES|MEN|MENS)$/.test(x) ? "H" : "F";
+  const m = brut.replace(/\s+/g, "").match(/(U17|U19|U23|J1[5-8]|S)(H|F|M|W)(1X|2X|4X|2-|4-|4\+|8\+)/);
+  if (m) return age(m[1]) + sexe(m[2]) + m[3].toLowerCase();
+  const bateau = [[/SKIFF/, "1x"], [/DEUX DE COUPLE|DOUBLE/, "2x"], [/QUATRE DE COUPLE/, "4x"], [/DEUX SANS/, "2-"],
+    [/QUATRE SANS/, "4-"], [/QUATRE (BARRE|AVEC)/, "4+"], [/HUIT/, "8+"]].find(([r]) => r.test(brut));
+  const a = brut.match(/\b(U17|U19|U23|J1[5-8]|SENIOR|SEN)\b/), x = brut.match(/\b(HOMMES?|FEMMES?)\b/);
+  return bateau && a && x ? age(a[1]) + sexe(x[1]) + bateau[1] : null;
+}
+/* Distance et prono saisis sur la page (bouton « Régler la distance et le prono »).
+   Gardés dans ce navigateur (localStorage) : { idÉpreuve: { distance, prono, aucun }, "*": { distance } }.
+   Distance -> prono = tableau PRONOS × distance / 2000 ; temps saisi -> utilisé tel quel. */
+const CLE_PRONO = "hel-prono";
+function lireSaisies() { try { return JSON.parse(localStorage.getItem(CLE_PRONO)) || {}; } catch (e) { return {}; } }
+function ecrireSaisies(o) { try { localStorage.setItem(CLE_PRONO, JSON.stringify(o)); return true; } catch (e) { return false; } }
+// Réglage de la course, complété par la distance générale (clé "*") si la course n'a pas le sien
+const saisie = d => {
+  const tout = lireSaisies(), propre = tout[(d.evenement || {}).id] || null, gen = tout["*"] && tout["*"].distance;
+  if (!gen || (propre && (propre.distance || propre.prono || propre.aucun))) return propre;
+  return { distance: gen, generale: true };
+};
+const distance = d => { const s = saisie(d); return s && s.distance ? s.distance : DISTANCE_COURSE; };
+const ETATS = { arrive: ["arrive", "Arrivé"], course: ["course", "En course"], attente: ["attente", "Au départ"] };
+
+let source = null;        // "connecteur" ou "demo"
+let epreuves = [];        // [{id, code, nom}]
+let choix = null;         // id de l'épreuve affichée
+let dernier = null;       // dernières données reçues
+let vus = new Map();      // dossard -> nombre de points passés (pour l'éclair et les passages)
+let recents = new Map();  // "dossard|point" -> heure de détection d'un passage
+let minuterie = null;
+let vue = "course";       // "course" ou "tous"
+try { if (localStorage.getItem("hel-vue") === "tous") vue = "tous"; } catch (e) {}
+let masques = new Set();  // libellés des points de chrono masqués par le spectateur
+try { masques = new Set(JSON.parse(localStorage.getItem("hel-masques") || "[]")); } catch (e) {}
+
+function basculer(label) {
+  if (label === null) masques.clear();
+  else if (masques.has(label)) masques.delete(label);
+  else masques.add(label);
+  try { localStorage.setItem("hel-masques", JSON.stringify([...masques])); } catch (e) {}
+  if (dernier) afficher(dernier, true);
+}
+
+setInterval(() => { $("horloge").textContent = hms(new Date()); }, 1000);
+$("horloge").textContent = hms(new Date());
+
+async function lire(params) {
+  const rep = await fetch(CONNECTEUR + "?" + params, { cache: "no-store" });
+  if (!rep.ok) throw new Error("HTTP " + rep.status);
+  return rep.json();
+}
+
+async function demarrer() {
+  try {
+    const liste = await lire("liste");
+    if (!Array.isArray(liste) || !liste.length) throw new Error("liste vide");
+    source = "connecteur"; epreuves = liste;
+  } catch (e) {
+    source = "demo"; epreuves = DEMO.liste(); $("demo").hidden = false;
+  }
+  try { choix = localStorage.getItem("hel-cat"); } catch (e) {}
+  if (!epreuves.some(ep => ep.id === choix)) choix = epreuves[0].id;
+  dessinerOnglets();
+  if (vue === "tous") changerVue("tous"); else actualiser(true);
+}
+
+function dessinerOnglets() {
+  const sel = $("categorie"), i = epreuves.findIndex(x => x.id === choix);
+  sel.innerHTML = epreuves.map(ep =>
+    `<option value="${esc(ep.id)}"${ep.id === choix ? " selected" : ""}>${esc(ep.code)}${ep.nom ? " · " + esc(ep.nom) : ""}</option>`).join("");
+  sel.onchange = () => changerCategorie(sel.value);
+  $("precedente").disabled = i <= 0;
+  $("suivante").disabled = i >= epreuves.length - 1;
+  $("precedente").onclick = () => i > 0 && changerCategorie(epreuves[i - 1].id);
+  $("suivante").onclick = () => i < epreuves.length - 1 && changerCategorie(epreuves[i + 1].id);
+}
+
+function changerCategorie(id) {
+  choix = id;
+  try { localStorage.setItem("hel-cat", choix); } catch (e) {}
+  vus = new Map(); recents = new Map(); dernier = null;
+  dessinerOnglets(); actualiser(true);
+}
+
+// ---- Vues « Par course » / « Tous les classements » + export PDF ----
+const lireEpreuve = id => source === "demo" ? Promise.resolve(DEMO.epreuve(id)) : lire("event=" + encodeURIComponent(id));
+function changerVue(v) {
+  vue = v;
+  try { localStorage.setItem("hel-vue", v); } catch (e) {}
+  $("vue-course").hidden = v !== "course";
+  $("vue-tous").hidden = v !== "tous";
+  document.querySelectorAll(".vues [data-vue]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.vue === v)));
+  if (epreuves.length) actualiser(true);
+}
+document.querySelectorAll(".vues [data-vue]").forEach(b => b.onclick = () => b.dataset.vue !== vue && changerVue(b.dataset.vue));
+async function actualiserTous() {
+  const liste = epreuves.slice(), res = new Array(liste.length);
+  let k = 0;   // 6 lectures à la fois
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (k < liste.length) { const i = k++; try { res[i] = await lireEpreuve(liste[i].id); } catch (e) { res[i] = null; } }
+  }));
+  if (vue !== "tous") return;
+  $("vue-tous").innerHTML = liste.map((ep, i) => {
+    const d = res[i];
+    if (!d || !Array.isArray(d.equipages) || !d.equipages.length) return "";
+    const t = tableau(d, new Set());
+    const infos = [t.dist + " m", t.prono ? "prono " + enTemps(t.prono) : "",
+      d.equipages.filter(e => e.etat === "arrive").length + "/" + d.equipages.length + " arrivés"].filter(Boolean).map(esc).join(" · ");
+    return `<section class="bloc-epreuve"><div class="epreuve-titre"><b>${esc(ep.code)}${ep.nom ? " · " + esc(ep.nom) : ""}</b><span>${infos}</span></div>
+      <div class="carte"><table><thead>${t.thead}</thead><tbody>${t.tbody}</tbody></table></div></section>`;
+  }).join("") || `<p class="message">Pas encore de classement.</p>`;
+  $("maj").textContent = "Actualisé à " + hms(new Date());
+}
+$("pdf").onclick = () => {
+  const ev = dernier && dernier.evenement;
+  $("titre-impression").innerHTML = "Hel van het Noorden 2026 · Chronométrage" +
+    `<small>${vue === "tous" ? "Tous les classements généraux" : "Classement général · " + esc(ev ? (ev.code + " · " + ev.nom) : "")} · ${esc(new Date().toLocaleString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" }))}</small>`;
+  window.print();   // dans la fenêtre d'impression : choisir « Enregistrer au format PDF »
+};
+
+// ---- Réglage distance et prono ----
+let reglageRempli = null;
+function infoReglage(d, cat, dist, prono, sp) {
+  const ev = d.evenement || {};
+  $("r-course").textContent = [ev.code, ev.nom].filter(Boolean).join(" · ");
+  if (reglageRempli !== ev.id) {           // on remplit les champs seulement quand on change de course (pas pendant la saisie)
+    reglageRempli = ev.id;
+    $("r-distance").value = sp && sp.distance && !sp.generale ? sp.distance : "";
+    $("r-prono").value = sp && sp.prono ? sp.prono : "";
+    $("r-aucun").checked = !!(sp && sp.aucun);
+  }
+  const auto = !sp ? "réglage automatique" : sp.generale ? "distance générale" : "réglé pour cette course";
+  const g = lireSaisies()["*"];
+  if (document.activeElement !== $("r-generale")) $("r-generale").value = g && g.distance ? g.distance : "";
+  $("r-info-generale").textContent = g && g.distance
+    ? `Toutes les courses sont comptées sur ${g.distance} m (sauf celles réglées une par une).`
+    : `Pas de distance générale : ${DISTANCE_COURSE} m par défaut (parcours de la Hel van het Noorden).`;
+  $("r-info").innerHTML = prono
+    ? `Prono affiché : <b>${enTemps(prono)}</b> (${sp && sp.prono ? "temps saisi" : `${esc(cat)} sur ${dist} m`}) · ${auto}`
+    : `Pas de prono affiché${sp && sp.aucun ? "" : !cat ? " (catégorie non reconnue)" : !PRONOS[cat] ? ` (${esc(cat)} absent du tableau)` : ""} · ${auto}`;
+}
+$("ouvrir-prono").onclick = () => {
+  const f = $("reglage"); f.hidden = !f.hidden;
+  $("ouvrir-prono").setAttribute("aria-expanded", String(!f.hidden));
+  if (!f.hidden) $("r-distance").focus();
+};
+$("reglage").onsubmit = ev => {
+  ev.preventDefault();
+  if (!dernier) return;
+  const id = (dernier.evenement || {}).id;
+  const dist = parseInt($("r-distance").value.replace(/\s/g, ""), 10) || 0;
+  const prono = $("r-prono").value.trim().replace(",", ".");
+  const aucun = $("r-aucun").checked;
+  if ($("r-distance").value.trim() && (dist < 100 || dist > 50000)) { $("r-info").textContent = "Distance à écrire en mètres, par exemple 6000."; return; }
+  if (prono && !/^(\d{1,2}:)?\d{1,2}:\d{2}(\.\d)?$/.test(prono)) { $("r-info").textContent = "Temps à écrire en minutes:secondes, par exemple 26:30."; return; }
+  const tout = lireSaisies();
+  if (!dist && !prono && !aucun) delete tout[id];
+  else tout[id] = Object.assign({}, dist ? { distance: dist } : {}, prono ? { prono } : {}, aucun ? { aucun: true } : {});
+  if (!ecrireSaisies(tout)) { $("r-info").textContent = "Ce navigateur ne permet pas d'enregistrer (navigation privée ?)."; return; }
+  afficher(dernier, false);
+  $("r-info").innerHTML += " · <b>Enregistré ✓</b>";
+};
+$("r-appliquer").onclick = () => {
+  const v = parseInt($("r-generale").value.replace(/\s/g, ""), 10) || 0;
+  if (v < 100 || v > 50000) { $("r-info-generale").textContent = "Distance à écrire en mètres, par exemple 6000."; return; }
+  const tout = lireSaisies(); tout["*"] = { distance: v };
+  if (!ecrireSaisies(tout)) { $("r-info-generale").textContent = "Ce navigateur ne permet pas d'enregistrer (navigation privée ?)."; return; }
+  $("r-generale").blur(); if (dernier) afficher(dernier, false);
+  $("r-info-generale").textContent += " Enregistré ✓";
+};
+$("r-generale-effacer").onclick = () => {
+  const tout = lireSaisies(); delete tout["*"]; ecrireSaisies(tout);
+  $("r-generale").value = ""; if (dernier) afficher(dernier, false);
+};
+$("r-effacer").onclick = () => {
+  if (!dernier) return;
+  const tout = lireSaisies(); delete tout[(dernier.evenement || {}).id]; ecrireSaisies(tout);
+  $("r-distance").value = ""; $("r-prono").value = ""; $("r-aucun").checked = false;
+  afficher(dernier, false);
+};
+
+async function actualiser(premier) {
+  clearTimeout(minuterie);
+  if (vue === "tous") {      // tous les classements : relus toutes les 30 s
+    await actualiserTous();
+    minuterie = setTimeout(() => actualiser(false), source === "demo" ? 4000 : 30000);
+    return;
+  }
+  const id = choix;
+  try {
+    const d = source === "demo" ? DEMO.epreuve(id) : await lire("event=" + encodeURIComponent(id));
+    if (id !== choix) return;            // l'onglet a changé entre-temps
+    if (!d || !Array.isArray(d.equipages)) throw new Error("format");
+    dernier = d;
+    afficher(d, premier);
+    const h = d.heure ? new Date(d.heure * 1000) : new Date();
+    $("maj").textContent = "Actualisé à " + hms(source === "demo" ? new Date() : h);
+  } catch (e) {
+    $("maj").textContent = dernier ? "Connexion perdue, nouvel essai dans 10 s…" : "Temps indisponibles pour le moment, nouvel essai dans 10 s…";
+    if (!dernier) $("tbody").innerHTML = `<tr><td class="message" colspan="9">Les temps de cette épreuve ne sont pas encore disponibles.</td></tr>`;
+  }
+  minuterie = setTimeout(() => actualiser(false), source === "demo" ? 2000 : INTERVALLE);
+}
+
+function afficher(d, premier) {
+  const points = d.points || [];
+  const nbPasses = e => points.reduce((n, p, i) => e.temps && e.temps[p.id] ? i + 1 : n, 0);
+  const liste = d.equipages.slice().sort((a, b) => {
+    const na = nbPasses(a), nb = nbPasses(b);
+    if (na !== nb) return nb - na;
+    if (na) {
+      const p = points[na - 1].id, ra = a.temps[p].rang ?? 999, rb = b.temps[p].rang ?? 999;
+      if (ra !== rb) return ra - rb;
+    }
+    return (parseInt(a.dossard) || 0) - (parseInt(b.dossard) || 0);
+  });
+
+  // Détection des nouveaux passages : éclair dans le tableau, trait or pendant une minute dans la colonne du point
+  const neufs = new Set(), maintenant = Date.now();
+  liste.forEach(e => {
+    const n = nbPasses(e), avant = vus.get(e.dossard);
+    if (!premier && n > (avant ?? 0)) {
+      neufs.add(e.dossard);
+      for (let i = avant ?? 0; i < n; i++) recents.set(e.dossard + "|" + points[i].id, maintenant);
+    }
+    vus.set(e.dossard, n);
+  });
+  for (const [cle, quand] of recents) if (maintenant - quand > 60000) recents.delete(cle);
+
+  // Choix des points affichés (mémorisé sur l'appareil du spectateur)
+  const visibles = points.filter(p => !masques.has(p.label));
+  $("filtres").innerHTML = `<span>Points affichés</span>` + points.map(p =>
+    `<button class="filtre" data-label="${esc(p.label)}" aria-pressed="${!masques.has(p.label)}">${esc(p.label)}</button>`).join("")
+    + (visibles.length < points.length ? `<button class="filtre tous" data-tous="1">Tout afficher</button>` : "");
+  $("filtres").querySelectorAll("button").forEach(b => b.onclick = () => basculer(b.dataset.tous ? null : b.dataset.label));
+
+  // Une colonne par point de chrono, équipages classés de haut en bas
+  $("points").innerHTML = !visibles.length ? `<div class="piste-vide" style="padding:14px">Aucun point de chrono sélectionné. Cochez-en un au-dessus.</div>` : visibles.map(p => {
+    const passes = d.equipages.filter(e => e.temps && e.temps[p.id])
+      .sort((a, b) => (a.temps[p.id].rang ?? 999) - (b.temps[p.id].rang ?? 999));
+    const puces = passes.map(e => {
+      const t = e.temps[p.id], cle = e.dossard + "|" + p.id, quand = recents.get(cle);
+      const ecart = t.rang === 1 || !t.ecart ? "" : `<span>${esc(t.ecart)}</span>`;
+      return `<div class="puce${t.rang === 1 ? " premier" : ""}${quand ? " recent" : ""}${quand === maintenant ? " neuf" : ""}" title="${esc(e.equipage)}">
+        <span class="pr">${esc(t.rang ?? "–")}</span><span class="pe">N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}</span>
+        <span class="pt">${esc(t.temps)}${ecart}</span></div>`;
+    }).join("");
+    return `<div class="colonne${p === points[points.length - 1] ? " arrivee" : ""}"><div class="colonne-nom"><b>${esc(p.label)}</b><small>${passes.length}/${d.equipages.length} passés</small></div>
+      ${puces || `<div class="piste-vide">Pas encore de passage.</div>`}</div>`;
+  }).join("");
+
+  const t = tableau(d, neufs);
+  infoReglage(d, t.cat, t.dist, t.prono, t.sp);
+  $("thead").innerHTML = t.thead;
+  $("tbody").innerHTML = t.tbody;
+}
+
+// Classement général d'une épreuve (thead + tbody), utilisé par « Par course » et par « Tous les classements »
+function tableau(d, neufs) {
+  const points = d.points || [];
+  const visibles = points.filter(p => !masques.has(p.label));
+  const nbPasses = e => points.reduce((n, p, i) => e.temps && e.temps[p.id] ? i + 1 : n, 0);
+  const liste = d.equipages.slice().sort((a, b) => {
+    const na = nbPasses(a), nb = nbPasses(b);
+    if (na !== nb) return nb - na;
+    if (na) {
+      const p = points[na - 1].id, ra = a.temps[p].rang ?? 999, rb = b.temps[p].rang ?? 999;
+      if (ra !== rb) return ra - rb;
+    }
+    return (parseInt(a.dossard) || 0) - (parseInt(b.dossard) || 0);
+  });
+  // Temps pronostique de la catégorie, ramené à la distance de la course.
+  // Une saisie sur la page passe avant tout : « Pas de prono », un temps donné, ou une distance.
+  const cat = categorie(d.evenement || {}), dist = distance(d), sp = saisie(d);
+  const prono = sp && sp.aucun ? null : sp && sp.prono ? secondes(sp.prono)
+    : cat && PRONOS[cat] ? secondes(PRONOS[cat]) * dist / 2000 : null;
+  const arrivee = points.length ? points[points.length - 1].id : null;
+
+  const thead = `<tr><th>Rg</th><th>N°</th><th>Équipage</th>${visibles.map(p => `<th class="num">${esc(p.label)}</th>`).join("")}<th class="num">Écart</th><th class="num" title="${cat ? esc(cat) + " · " : ""}temps pronostique sur ${dist} m">Prono</th><th class="num">% prono</th><th>État</th></tr>`;
+  if (!liste.length) return { thead, tbody: `<tr><td class="message" colspan="${visibles.length + 7}">Pas encore d'équipage dans cette épreuve.</td></tr>`, cat, dist, prono, sp };
+  const tbody = liste.map((e, i) => {
+    const n = nbPasses(e), der = n ? e.temps[points[n - 1].id] : null;
+    const rang = n ? i + 1 : "";   // place dans le classement général (le plus avancé d'abord)
+    const cellules = visibles.map(p => {
+      const t = e.temps && e.temps[p.id];
+      if (!t) return `<td class="num vide">–</td>`;
+      // Temps du tronçon : écart avec le dernier point chronométré avant celui-ci
+      let troncon = "";
+      const sec = secondes(t.temps);
+      for (let k = points.indexOf(p) - 1; k >= 0 && sec != null; k--) {
+        const avant = e.temps[points[k].id];
+        if (avant && secondes(avant.temps) != null) { troncon = `<span class="tr">(${chrono(sec - secondes(avant.temps))})</span>`; break; }
+      }
+      return `<td class="num"><span class="t">${esc(t.temps)}</span><span class="r ${t.rang === 1 ? "r1" : ""}">${esc(t.rang ?? "–")}<sup>${t.rang === 1 ? "er" : "e"}</sup></span>${troncon}</td>`;
+    }).join("");
+    const ecart = der ? (der.rang === 1 || !der.ecart ? "—" : esc(der.ecart)) : "";
+    // % du prono = temps pronostique / temps réalisé (100 % = prono atteint), seulement sur le temps final
+    const fin = arrivee && e.temps && e.temps[arrivee], sFin = fin ? secondes(fin.temps) : null;
+    const pourcent = prono && sFin ? (prono / sFin * 100).toFixed(2).replace(".", ",") + " %" : "";
+    const [cls, txt] = ETATS[e.etat] || ["hors", e.etat || ""];
+    const detail = [e.club && e.equipage && e.club !== e.equipage ? e.equipage : "", e.nage].filter(Boolean).map(esc).join(" · ");
+    return `<tr class="${neufs.has(e.dossard) ? "neuf " : ""}${n === points.length && rang && rang <= 3 ? "podium" : ""}">
+      <td class="rang">${esc(rang)}</td><td><span class="dossard">${esc(e.dossard)}</span></td>
+      <td><div class="club">${esc(e.club || e.equipage)}</div><div class="detail">${detail}</div></td>
+      ${cellules}<td class="num ecart">${ecart}</td>
+      <td class="num prono">${prono ? enTemps(prono) : "–"}</td><td class="num pct">${pourcent || `<span class="vide">–</span>`}</td><td><span class="etat ${cls}">${esc(txt)}</span></td></tr>`;
+  }).join("");
+  return { thead, tbody, cat, dist, prono, sp };
+}
+
+/* ========= Mode démonstration =========
+   Utilisé seulement si connecteur.php ne répond pas (aperçu, test sur ordinateur).
+   Produit des données au même format que le connecteur. */
+const DEMO = (() => {
+  const EPREUVES = [
+    { id: "d-sh8", code: "SH8+", nom: "Huit barré Senior Homme", base: 1560 },
+    { id: "d-sf8", code: "SF8+", nom: "Huit barré Senior Femme", base: 1740 },
+    { id: "d-sh4", code: "SH4x", nom: "Quatre de couple Senior Homme", base: 1620 },
+    { id: "d-sh2", code: "SH2x", nom: "Deux de couple Senior Homme", base: 1800 },
+  ];
+  const CLUBS = [
+    ["Cercle de l'Aviron de Nantes", "CAN"], ["Aviron Nantais", "AN"], ["SN Angers", "SNA"], ["Aviron Bayonnais", "AB"],
+    ["Cercle Nautique de Verdun", "CNVD"], ["Lyon Aviron Union Nautique", "LAUN"], ["Aviron Toulousain", "AT"], ["SN Compiègne", "SNC"],
+    ["Rowing Club de Strasbourg", "RCS"], ["Aviron Grenoblois", "AG"], ["Aviron Club de Nice", "ACN"], ["Tees Rowing Club", "TRC"],
+  ];
+  const NAGES = ["Louis MARTIN", "Hugo BERNARD", "Emma PETIT", "Léa DUBOIS", "Jules MOREAU", "Chloé LAURENT", "Tom GIRARD", "Manon ROUX", "Paul FOURNIER", "Inès MOREL"];
+  const POINTS = [1000, 2000, 3000, 4000, 5000, 6000, 7000].map(m => ({ id: "p" + m, label: m + "m" })).concat([{ id: "arr", label: "Arrivée" }]);
+  const VITESSE = 12;
+  let s = 7;
+  const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const equipages = [];
+  let dossard = 1;
+  EPREUVES.forEach(ep => {
+    CLUBS.slice().sort(() => r() - .5).slice(0, 8).forEach(c => {
+      const total = ep.base * (0.95 + r() * 0.1);
+      const segments = POINTS.map(() => 1 + (r() - .5) * 0.08), somme = segments.reduce((a, b) => a + b);
+      let cumul = 0;
+      const passages = Object.fromEntries(POINTS.map((p, i) => [p.id, total * (cumul += segments[i]) / somme]));
+      equipages.push({ ep: ep.id, dossard: String(dossard), depart: (dossard - 1) * 30, club: c[1], equipage: c[0] + (ep.code.includes("8") ? "" : " " + (1 + Math.floor(r() * 2))),
+        nage: NAGES[Math.floor(r() * NAGES.length)], passages });
+      dossard++;
+    });
+  });
+  const fin = Math.max(...equipages.map(e => e.depart + e.passages.arr)) + 240;
+  let t0 = Date.now();
+  const debut = 14 * 60;   // la démo s'ouvre 20 min après le premier départ
+  const fmt = sec => { const m = Math.floor(sec / 60); return `${m}:${(sec - m * 60).toFixed(2).padStart(5, "0")}`; };
+  const fmtEcart = sec => sec < 60 ? sec.toFixed(2) : fmt(sec);
+  return {
+    liste: () => EPREUVES.map(({ id, code, nom }) => ({ id, code, nom })),
+    epreuve(id) {
+      let now = debut + (Date.now() - t0) / 1000 * VITESSE;
+      if (now > fin) { t0 = Date.now(); now = debut; vus = new Map(); }
+      const ep = EPREUVES.find(x => x.id === id);
+      const liste = equipages.filter(e => e.ep === id);
+      const temps = new Map(liste.map(e => [e, {}]));
+      POINTS.forEach(p => {
+        const passes = liste.filter(e => now - e.depart >= e.passages[p.id]).sort((a, b) => a.passages[p.id] - b.passages[p.id]);
+        passes.forEach((e, i) => temps.get(e)[p.id] = { temps: fmt(e.passages[p.id]), rang: i + 1, ecart: i ? "+" + fmtEcart(e.passages[p.id] - passes[0].passages[p.id]) : null });
+      });
+      return {
+        heure: Math.floor(Date.now() / 1000),
+        evenement: { id, code: ep.code, nom: ep.nom },
+        points: POINTS,
+        equipages: liste.map(e => {
+          const t = temps.get(e);
+          return { dossard: e.dossard, equipage: e.equipage, club: e.club, nage: e.nage, temps: t,
+            etat: t.arr ? "arrive" : now >= e.depart ? "course" : "attente" };
+        }),
+      };
+    },
+  };
+})();
+
+demarrer();
+</script>
+</body>
+</html>
