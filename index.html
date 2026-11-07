@@ -333,8 +333,16 @@ function categorie(ev) {
   const sexe = x => /^(H|M|HOMME|HOMMES|MEN|MENS)$/.test(x) ? "H" : "F";
   const m = brut.replace(/\s+/g, "").match(/(U17|U19|U23|J1[5-8]|S)(H|F|M|W)(1X|2X|4X|2-|4-|4\+|8\+)/);
   if (m) return age(m[1]) + sexe(m[2]) + m[3].toLowerCase();
-  const bateau = [[/SKIFF/, "1x"], [/DEUX DE COUPLE|DOUBLE/, "2x"], [/QUATRE DE COUPLE/, "4x"], [/DEUX SANS/, "2-"],
-    [/QUATRE SANS/, "4-"], [/QUATRE (BARRE|AVEC)/, "4+"], [/HUIT/, "8+"]].find(([r]) => r.test(brut));
+  // Codes néerlandais (Time-Team NL) : « M 2- », « V 1x », « LM 1x » (poids léger, compté comme senior),
+  // « M18 1x » / « V18 2x » (= U19), « M16 » (= U17), « MM 1x » / « VM 1x » (masters), « HSB 1x ».
+  const nl = String(ev.code || "").toUpperCase().trim().match(/^L?([MVHD])(SA|SB|S|M|J?1[5-8]|23|B)?\s*(1X|2X|4X|2-|4-|4\+|8\+)$/);
+  if (nl) {
+    const g = /[MH]/.test(nl[1]) ? "H" : "F", k = (nl[2] || "").replace("J", "");
+    const ag = /^1[78]$/.test(k) ? "U19" : /^1[56]$/.test(k) ? "U17" : k === "23" ? "U23" : k === "M" ? "Master" : "S";
+    return ag + g + nl[3].toLowerCase();
+  }
+  const bateau = [[/SKIFF/, "1x"], [/DEUX DE COUPLE|DOUBLE|DUBBEL TWEE/, "2x"], [/QUATRE DE COUPLE|DUBBEL VIER/, "4x"], [/DEUX SANS|TWEE-ZONDER/, "2-"],
+    [/QUATRE SANS|VIER-ZONDER/, "4-"], [/QUATRE (BARRE|AVEC)|VIER-MET/, "4+"], [/HUIT|\bACHT\b/, "8+"]].find(([r]) => r.test(brut));
   const a = brut.match(/\b(U17|U19|U23|J1[5-8]|SENIOR|SEN)\b/), x = brut.match(/\b(HOMMES?|FEMMES?)\b/);
   return bateau && a && x ? age(a[1]) + sexe(x[1]) + bateau[1] : null;
 }
