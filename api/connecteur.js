@@ -12,7 +12,7 @@
 // beta.regatta.time-team.nl/hel/<année>/events/<id>/finals
 
 // Hel van het Noorden (Groningue). Réglé sur l'édition 2025 pour les essais.
-const API_BASE = 'https://api.regatta.time-team.nl/api/1/hel/2025';
+const API_BASE = 'https://api.beta.regatta.time-team.nl/api/1/hel/2025';
 
 const EVENEMENTS = [
   '1efe25d2-fcb5-4858-a9ae-01666a2c66b0', // 001 M 2-

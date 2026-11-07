@@ -3,6 +3,7 @@
 
 const ID = '1efe25d2-fcb5-4858-a9ae-01666a2c66b0'; // 001 M 2- (2025)
 const CANDIDATS = [
+  `https://api.beta.regatta.time-team.nl/api/1/hel/2025/event/${ID}/final`,
   `https://api.regatta.time-team.nl/api/2/hel/2025/event/${ID}/final`,
   `https://api.regatta.time-team.nl/api/v1/hel/2025/event/${ID}/final`,
   `https://api.regatta.time-team.nl/1/hel/2025/event/${ID}/final`,
