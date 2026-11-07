@@ -14,19 +14,20 @@
 // Hel van het Noorden (Groningue). Réglé sur l'édition 2025 pour les essais.
 const API_BASE = 'https://api.beta.regatta.time-team.nl/api/1/hel/2025';
 
+// [identifiant, code, nom] dans l'ordre des onglets.
 const EVENEMENTS = [
-  '1efe25d2-fcb5-4858-a9ae-01666a2c66b0', // 001 M 2-
-  '95299287-7920-437d-aa52-5d22aec466cc', // 002 LM 2-
-  '61ab30f4-b0a1-4d94-9db6-40fadea60722', // 003 MM 2-
-  '4b87e9ed-e75e-446e-a7ef-c4d0905d1974', // 004 V 1x
-  '01c06330-4014-49ce-b335-df6571178a1d', // 005 LV 1x
-  '2c9dab77-6338-4df3-88d2-0dbda7814ad1', // 006 V18 1x
-  '75aa198f-5b39-47a0-b07e-961139e51195', // 007 VM 1x
-  '7cb8e100-07b8-4ebd-87e4-0ab2b0414e0b', // 008 V 2-
-  'efcb16fe-fbe0-45c9-a0c1-0f0504de12ed', // 010 M 1x
-  '31aaf297-12fe-454e-b004-029409f16786', // 011 LM 1x
-  '311ca4d6-045a-4405-9fb5-31c83489a82e', // 012 M18 1x
-  'fb0204f9-2133-44ba-ac04-4212ef28872a', // 013 MM 1x
+  ['1efe25d2-fcb5-4858-a9ae-01666a2c66b0', 'M 2-', 'Mannen twee-zonder'], // 001
+  ['95299287-7920-437d-aa52-5d22aec466cc', 'LM 2-', 'Lichte mannen twee-zonder'], // 002
+  ['61ab30f4-b0a1-4d94-9db6-40fadea60722', 'MM 2-', 'Masters mannen twee-zonder'], // 003
+  ['4b87e9ed-e75e-446e-a7ef-c4d0905d1974', 'V 1x', 'Vrouwen skiff'], // 004
+  ['01c06330-4014-49ce-b335-df6571178a1d', 'LV 1x', 'Lichte vrouwen skiff'], // 005
+  ['2c9dab77-6338-4df3-88d2-0dbda7814ad1', 'V18 1x', 'Vrouwen 18 skiff'], // 006
+  ['75aa198f-5b39-47a0-b07e-961139e51195', 'VM 1x', 'Masters vrouwen skiff'], // 007
+  ['7cb8e100-07b8-4ebd-87e4-0ab2b0414e0b', 'V 2-', 'Vrouwen twee-zonder'], // 008
+  ['efcb16fe-fbe0-45c9-a0c1-0f0504de12ed', 'M 1x', 'Mannen skiff'], // 010
+  ['31aaf297-12fe-454e-b004-029409f16786', 'LM 1x', 'Lichte mannen skiff'], // 011
+  ['311ca4d6-045a-4405-9fb5-31c83489a82e', 'M18 1x', 'Mannen 18 skiff'], // 012
+  ['fb0204f9-2133-44ba-ac04-4212ef28872a', 'MM 1x', 'Masters mannen skiff'], // 013
 ];
 
 const CACHE_SECONDES = 10;
@@ -91,13 +92,12 @@ function transformer(src) {
   };
 }
 
+// La liste des onglets vient directement de EVENEMENTS : instantané, sans appel à Time-Team.
 async function construireListe() {
-  return Promise.all(EVENEMENTS.map(async id => {
-    const src = await telecharger(`${API_BASE}/event/${id}/final`);
-    const ev = src ? premier(src.event) : null;
-    return { id, code: (ev && ev.code) || '?', nom: (ev && ev.name) || '' };
-  }));
+  return EVENEMENTS.map(([id, code, nom]) => ({ id, code, nom }));
 }
+
+const IDS = EVENEMENTS.map(e => e[0]);
 
 module.exports = async (req, res) => {
   const q = req.query || {};
@@ -107,7 +107,7 @@ module.exports = async (req, res) => {
   if ('liste' in q) {
     donnees = await construireListe();
     duree = CACHE_LISTE;
-  } else if (q.event && EVENEMENTS.includes(q.event)) {
+  } else if (q.event && IDS.includes(q.event)) {
     donnees = transformer(await telecharger(`${API_BASE}/event/${q.event}/final`));
   } else {
     res.statusCode = 400;
