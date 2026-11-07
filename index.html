@@ -8,16 +8,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap">
 <style>
-/* Mise en page : bandeau bleu nuit comme headofnantes.com, titre condensé, onglets d'épreuves, une colonne de passages par point de chrono, tableau des temps.
+/* Habillage néerlandais : bleu du drapeau, accent orange (Oranje), liseré rouge-blanc-bleu.
+   Mise en page : titre condensé, onglets d'épreuves, une colonne de passages par point de chrono, tableau des temps.
    Couleurs : modifier les variables ci-dessous si besoin. La page garde un seul habillage sombre, comme le site. */
 :root {
-  --nuit: #0b1a33;       /* fond principal */
-  --nuit-2: #0f213f;     /* bandeaux, cartes */
-  --nuit-3: #16294b;     /* survol, lignes alternées */
-  --or: #d4a53f;         /* accent */
-  --creme: #f4f1e8;      /* texte */
-  --brume: #9aa6b8;      /* texte secondaire */
-  --trait: #22365a;      /* filets */
+  --nuit: #0c1a3d;       /* fond principal (bleu des Pays-Bas foncé) */
+  --nuit-2: #122552;     /* bandeaux, cartes */
+  --nuit-3: #1a3168;     /* survol, lignes alternées */
+  --or: #ff7f00;         /* accent orange néerlandais */
+  --rouge: #ae1c28;      /* rouge du drapeau */
+  --bleu: #21468b;       /* bleu du drapeau */
+  --creme: #ffffff;      /* texte */
+  --brume: #a9b6d3;      /* texte secondaire */
+  --trait: #26407a;      /* filets */
   --ok: #6cc59a;         /* arrivé */
   --titre: "Anton", "Oswald", "Arial Narrow", Impact, sans-serif;
   --mono: "Space Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -29,7 +32,10 @@ body { margin: 0; background: var(--nuit); color: var(--creme); font: 16px/1.45 
 .wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
 /* Bandeau du haut */
-.top { background: var(--nuit-2); border-bottom: 1px solid var(--trait); }
+.top { background: var(--nuit-2); border-bottom: 1px solid var(--trait); position: relative; }
+.top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 6px; background: linear-gradient(var(--rouge) 0 33.3%, #fff 33.3% 66.6%, var(--bleu) 66.6%); }
+.logo-regate { height: 52px; width: auto; max-width: 140px; object-fit: contain; background: #fff; padding: 3px; border-radius: 4px; flex: none; }
+@media (max-width: 560px) { .logo-regate { height: 42px; } }
 .top .wrap { padding-block: 12px; display: flex; align-items: center; gap: 14px; }
 .logo { display: grid; place-items: center; width: 42px; height: 42px; border: 1.5px solid var(--or); color: var(--or); font: 15px var(--titre); letter-spacing: .02em; flex: none; }
 .logo-club { margin-left: auto; height: 48px; width: auto; background: #f7f7f7; padding: 3px 6px; flex: none; }
@@ -121,7 +127,7 @@ h1 em { font-style: normal; color: var(--or); }
 .puce .pt { text-align: right; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.15; }
 .puce .pt span { display: block; font-weight: 400; font-size: 12px; color: var(--brume); }
 .puce.premier .pr { color: var(--or); }
-.puce.recent { border-left-color: var(--or); background: rgba(212,165,63,.08); }
+.puce.recent { border-left-color: var(--or); background: rgba(255,127,0,.08); }
 .puce.neuf { animation: eclair 2.6s ease-out; }
 .piste-vide { color: var(--brume); font-size: 14px; padding: 12px; }
 .filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
@@ -164,7 +170,7 @@ tr.podium .rang { color: var(--or); }
 .etat.hors { color: #e58a7a; }
 .message { padding: 28px 16px; text-align: center; color: var(--brume); }
 tr.neuf td { animation: eclair 2.6s ease-out; }
-@keyframes eclair { from { background: rgba(212,165,63,.2); } to { background: transparent; } }
+@keyframes eclair { from { background: rgba(255,127,0,.2); } to { background: transparent; } }
 
 /* Colonnes Rg, N° et Équipage figées : elles restent visibles quand on fait défiler les temps vers la droite */
 .carte th:nth-child(-n+3), .carte td:nth-child(-n+3):not(.message) { position: sticky; z-index: 1; background: var(--nuit-2); }
@@ -222,7 +228,7 @@ tr.neuf td { animation: eclair 2.6s ease-out; }
 <body>
 <header class="top">
   <div class="wrap">
-    <div class="logo" aria-hidden="true">HvhN</div>
+    <a href="https://www.helvanhetnoorden.nl/" target="_blank" rel="noopener" style="display:contents"><img class="logo-regate" alt="Hel van het Noorden" src="https://cdn.time-team.nl/media/regatta/thumb/e349fa9b-d75c-43dd-b0c6-47347c3a9feb.png" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo',textContent:'HvhN'}))"></a>
     <div class="marque"><b>Hel van het Noorden</b><span>49ᵉ édition · Groningue · 22 novembre 2026</span></div>
   </div>
 </header>
@@ -291,7 +297,7 @@ tr.neuf td { animation: eclair 2.6s ease-out; }
   <div id="vue-tous" hidden><p class="message">Chargement de tous les classements…</p></div>
   <div class="pied">
     <span>Actualisation automatique toutes les 10 secondes. Dans le classement général : temps cumulé, rang au point, et entre parenthèses le temps du tronçon depuis le point précédent. % prono = temps pronostique / temps réalisé.</span>
-    <span>Chronométrage : Time-Team · <a href="https://regatta.time-team.nl/hel/2026/" target="_blank" rel="noopener">regatta.time-team.nl</a></span>
+    <span>Chronométrage : Time-Team · <a href="https://regatta.time-team.nl/hel/2026/" target="_blank" rel="noopener">regatta.time-team.nl</a> · <a href="https://www.helvanhetnoorden.nl/" target="_blank" rel="noopener">helvanhetnoorden.nl</a></span>
   </div>
 </main>
 
