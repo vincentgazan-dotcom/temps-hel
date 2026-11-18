@@ -341,10 +341,10 @@ function categorie(ev) {
   if (m) return age(m[1]) + sexe(m[2]) + m[3].toLowerCase();
   // Codes néerlandais (Time-Team NL) : « M 2- », « V 1x », « LM 1x » (poids léger, compté comme senior),
   // « M18 1x » / « V18 2x » (= U19), « M16 » (= U17), « MM 1x » / « VM 1x » (masters), « HSB 1x ».
-  const nl = String(ev.code || "").toUpperCase().trim().match(/^L?([MVHD])(SA|SB|S|M|J?1[5-8]|23|B)?\s*(1X|2X|4X|2-|4-|4\+|8\+)$/);
+  const nl = String(ev.code || "").toUpperCase().trim().match(/^L?([MVHD])(SA|SB|S|M[A-F]?|J?1[5-8]|23|B)?\s*(1X|2X|4X|2-|4-|4\+|8\+)$/);
   if (nl) {
     const g = /[MH]/.test(nl[1]) ? "H" : "F", k = (nl[2] || "").replace("J", "");
-    const ag = /^1[78]$/.test(k) ? "U19" : /^1[56]$/.test(k) ? "U17" : k === "23" ? "U23" : k === "M" ? "Master" : "S";
+    const ag = /^1[78]$/.test(k) ? "U19" : /^1[56]$/.test(k) ? "U17" : k === "23" ? "U23" : /^M/.test(k) ? "Master" : "S";
     return ag + g + nl[3].toLowerCase();
   }
   const bateau = [[/SKIFF/, "1x"], [/DEUX DE COUPLE|DOUBLE|DUBBEL TWEE/, "2x"], [/QUATRE DE COUPLE|DUBBEL VIER/, "4x"], [/DEUX SANS|TWEE-ZONDER/, "2-"],

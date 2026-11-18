@@ -11,23 +11,43 @@
 // Les identifiants se lisent dans les adresses
 // beta.regatta.time-team.nl/hel/<année>/events/<id>/finals
 
-// Hel van het Noorden (Groningue). Réglé sur l'édition 2025 pour les essais.
-const API_BASE = 'https://api.beta.regatta.time-team.nl/api/1/hel/2025';
+// Hel van het Noorden (Groningue), 22 novembre 2026.
+const API_BASE = 'https://api.beta.regatta.time-team.nl/api/1/hel/2026';
 
 // [identifiant, code, nom] dans l'ordre des onglets.
 const EVENEMENTS = [
-  ['1efe25d2-fcb5-4858-a9ae-01666a2c66b0', 'M 2-', 'Mannen twee-zonder'], // 001
-  ['95299287-7920-437d-aa52-5d22aec466cc', 'LM 2-', 'Lichte mannen twee-zonder'], // 002
-  ['61ab30f4-b0a1-4d94-9db6-40fadea60722', 'MM 2-', 'Masters mannen twee-zonder'], // 003
-  ['4b87e9ed-e75e-446e-a7ef-c4d0905d1974', 'V 1x', 'Vrouwen skiff'], // 004
-  ['01c06330-4014-49ce-b335-df6571178a1d', 'LV 1x', 'Lichte vrouwen skiff'], // 005
-  ['2c9dab77-6338-4df3-88d2-0dbda7814ad1', 'V18 1x', 'Vrouwen 18 skiff'], // 006
-  ['75aa198f-5b39-47a0-b07e-961139e51195', 'VM 1x', 'Masters vrouwen skiff'], // 007
-  ['7cb8e100-07b8-4ebd-87e4-0ab2b0414e0b', 'V 2-', 'Vrouwen twee-zonder'], // 008
-  ['efcb16fe-fbe0-45c9-a0c1-0f0504de12ed', 'M 1x', 'Mannen skiff'], // 010
-  ['31aaf297-12fe-454e-b004-029409f16786', 'LM 1x', 'Lichte mannen skiff'], // 011
-  ['311ca4d6-045a-4405-9fb5-31c83489a82e', 'M18 1x', 'Mannen 18 skiff'], // 012
-  ['fb0204f9-2133-44ba-ac04-4212ef28872a', 'MM 1x', 'Masters mannen skiff'], // 013
+  ['c41eebb3-4817-4e2d-bef4-92abc55e1b63', 'M 2-', 'Mannen twee-zonder'], // 001 · 9 inscrits
+  ['f8b0f034-cceb-4fac-84d2-d34c9ffe5b35', 'MSB 2-', 'Mannen senioren b twee-zonder'], // 002 · 5 inscrits
+  // ['d7170e79-4f08-47c3-9e1e-34a9b0f2cde1', 'LM 2-', 'Lichte mannen twee-zonder'], // 003 · 0 inscrits (vide, décommenter si besoin)
+  ['7dfc43bb-24f7-4ef3-b27d-35b8818364e0', 'LMSB 2-', 'Lichte mannen senioren b twee-zonder'], // 004 · 2 inscrits
+  ['12b09d4e-b3ed-41f4-bd82-bfcf5af25f60', 'MM 2-', 'Mannen masters twee-zonder'], // 005 · 4 inscrits
+  ['a4a5acd4-c28f-41f5-92f6-6adf97c854b0', 'MMD 2-', 'Mannen masters d twee-zonder'], // 006 · 1 inscrits
+  ['ac8abb3c-79fe-4d70-846c-bd2a185da3a9', 'V 1x', 'Vrouwen skiff'], // 007 · 9 inscrits
+  ['afb28cc0-ab5d-4064-a213-72ef98a94783', 'VSB 1x', 'Vrouwen senioren b skiff'], // 008 · 4 inscrits
+  ['febecfea-d8ba-4259-9431-71ae43cbc6df', 'LV 1x', 'Lichte vrouwen skiff'], // 009 · 4 inscrits
+  ['938cdf13-9ece-4e84-a334-6fd81f257941', 'LVSB 1x', 'Lichte vrouwen senioren b skiff'], // 010 · 7 inscrits
+  ['d6e25e5c-2088-4aa5-9358-a2946bffeb42', 'V18 1x', 'Vrouwen achttien skiff'], // 011 · 2 inscrits
+  // ['8d5df7a4-48dd-4dbc-9c07-e330608df697', 'VM 1x', 'Vrouwen masters skiff'], // 012 · 0 inscrits (vide, décommenter si besoin)
+  // ['25d477df-fb4d-439a-b3ca-5f1344d646a8', 'VMD 1x', 'Vrouwen masters d skiff'], // 013 · 0 inscrits (vide, décommenter si besoin)
+  ['dcd56d48-0b36-4f9b-b6d1-dcf577290daa', 'M 1x', 'Mannen skiff'], // 014 · 18 inscrits
+  ['b854da97-a86f-4037-a02a-c2e3471be771', 'MSB 1x', 'Mannen senioren b skiff'], // 015 · 23 inscrits
+  ['5586a468-5950-4e34-b9bc-7bfc5da507ce', 'LM 1x', 'Lichte mannen skiff'], // 016 · 6 inscrits
+  ['5432b687-5ec8-4886-9d27-802e63eb9fe5', 'LMSB 1x', 'Lichte mannen senioren b skiff'], // 017 · 7 inscrits
+  // ['0a1f3f11-f6e8-40e3-9ad2-ffd4334cbbd0', 'M18 1x', 'Mannen achttien skiff'], // 018 · 0 inscrits (vide, décommenter si besoin)
+  ['54a4ce3a-22b0-4275-829c-079b70042d5e', 'V 2-', 'Vrouwen twee-zonder'], // 019 · 4 inscrits
+  ['d667808b-86a2-415b-a54e-68252dd3e288', 'VSB 2-', 'Vrouwen senioren b twee-zonder'], // 020 · 9 inscrits
+  // ['1aefb5ae-591a-41ed-a5ac-3b5b1793cdcd', 'VM 2-', 'Vrouwen masters twee-zonder'], // 021 · 0 inscrits (vide, décommenter si besoin)
+  // ['f87e7ca5-ad84-4fbc-81a6-7bd624c159ee', 'VMD 2-', 'Vrouwen masters d twee-zonder'], // 022 · 0 inscrits (vide, décommenter si besoin)
+  ['cf190b70-9523-466d-a1e9-56ef110e81cf', 'MMA 1x', 'Mannen masters a skiff'], // 023 · 2 inscrits
+  // ['19e758c0-fb33-4596-861d-c90d269120a8', 'MMB 1x', 'Mannen masters b skiff'], // 024 · 0 inscrits (vide, décommenter si besoin)
+  // ['1c2f9963-abf9-488b-a28f-c8f18fbdb10d', 'MMC 1x', 'Mannen masters c skiff'], // 025 · 0 inscrits (vide, décommenter si besoin)
+  // ['fa46f4fb-2797-4189-88b6-c4a6a982580a', 'MMD 1x', 'Mannen masters d skiff'], // 026 · 0 inscrits (vide, décommenter si besoin)
+  ['d241149d-733e-48f5-8fe8-2a487757fb4e', 'MME 1x', 'Mannen masters e skiff'], // 027 · 7 inscrits
+  ['ef0c3f92-016b-4e81-b73e-ecce1c67f716', 'MMF 1x', 'Mannen masters f skiff'], // 028 · 3 inscrits
+  ['52749c4c-5f1b-4699-a288-deda364d1cd2', 'M18 2x', 'Mannen achttien dubbeltwee'], // 029 · 15 inscrits
+  ['f27e1054-1853-4db6-8798-0b6a01e5b78a', 'V18 2x', 'Vrouwen achttien dubbeltwee'], // 030 · 16 inscrits
+  ['14f25c7a-b771-4b5a-9055-68b26d567198', 'M18 2-', 'Mannen achttien twee-zonder'], // 031 · 4 inscrits
+  ['5ec0d207-27ad-4e20-bf2f-f5e2fa0fd782', 'V18 2-', 'Vrouwen achttien twee-zonder'], // 032 · 2 inscrits
 ];
 
 const CACHE_SECONDES = 10;
