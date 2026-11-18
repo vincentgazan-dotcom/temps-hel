@@ -50,6 +50,27 @@ const EVENEMENTS = [
   ['5ec0d207-27ad-4e20-bf2f-f5e2fa0fd782', 'V18 2-', 'Vrouwen achttien twee-zonder'], // 032 · 2 inscrits
 ];
 
+// Traduction en français des codes néerlandais de Time-Team.
+// « MSB 1x » -> { code: "SH1x B", nom: "Skiff Senior B Homme" } ; « MMA 1x » -> « MH1x A » (Master A) ;
+// « M18 2x » -> « U19H2x » (Junior 18) ; préfixe L = poids léger (PL).
+const BATEAUX = { '1X': ['1x', 'Skiff'], '2X': ['2x', 'Deux de couple'], '4X': ['4x', 'Quatre de couple'],
+  '2-': ['2-', 'Deux sans barreur'], '4-': ['4-', 'Quatre sans barreur'], '4+': ['4+', 'Quatre barré'], '8+': ['8+', 'Huit barré'] };
+function traduire(codeNL, nomNL) {
+  const m = String(codeNL || '').toUpperCase().trim().match(/^(L)?([MVHD])(SA|SB|S|M[A-F]?|1[5-8]|23)?\s*(1X|2X|4X|2-|4-|4\+|8\+)$/);
+  if (!m) return { code: codeNL || '', nom: nomNL || '' };
+  const [, leger, g, cat = '', b] = m;
+  const homme = /[MH]/.test(g), sx = homme ? 'H' : 'F', sexe = homme ? 'Homme' : 'Femme';
+  const [bc, bn] = BATEAUX[b];
+  let code, age;
+  if (/^1[78]$/.test(cat)) { code = `U19${sx}${bc}`; age = 'Junior 18'; }
+  else if (/^1[56]$/.test(cat)) { code = `U17${sx}${bc}`; age = 'Junior 16'; }
+  else if (cat === '23') { code = `U23${sx}${bc}`; age = 'U23'; }
+  else if (cat[0] === 'M') { const l = cat.slice(1); code = `M${sx}${bc}${l ? ' ' + l : ''}`; age = 'Master' + (l ? ' ' + l : ''); }
+  else { const l = cat === 'SB' ? 'B' : cat === 'SA' ? 'A' : ''; code = `S${sx}${bc}${l ? ' ' + l : ''}`; age = 'Senior' + (l ? ' ' + l : ''); }
+  if (leger) code += ' PL';
+  return { code, nom: `${bn} ${age} ${sexe}${leger ? ' poids léger' : ''}` };
+}
+
 const CACHE_SECONDES = 10;
 const CACHE_LISTE = 3600;
 
@@ -105,7 +126,7 @@ function transformer(src) {
 
   return {
     heure: Math.floor(Number(src.timestamp || Date.now()) / 1000),
-    evenement: { id: ev.id || '', code: ev.code || '', nom: ev.name || '' },
+    evenement: { id: ev.id || '', ...traduire(ev.code, ev.name) },
     depart: race.start_datetime ?? null,
     points,
     equipages,
@@ -114,7 +135,7 @@ function transformer(src) {
 
 // La liste des onglets vient directement de EVENEMENTS : instantané, sans appel à Time-Team.
 async function construireListe() {
-  return EVENEMENTS.map(([id, code, nom]) => ({ id, code, nom }));
+  return EVENEMENTS.map(([id, code, nom]) => ({ id, ...traduire(code, nom) }));
 }
 
 const IDS = EVENEMENTS.map(e => e[0]);
