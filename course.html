@@ -79,6 +79,7 @@ select option { font: 16px var(--texte); text-transform: none; color: var(--crem
 .fiche th { font: 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brume); font-weight: 400; }
 #m-direct[aria-pressed="true"] { background: var(--rouge); border-color: var(--rouge); color: #fff; }
 [hidden] { display: none !important; }
+.bateau.estime { opacity: .85; }
 .note { font-size: 13px; color: var(--brume); margin: 14px 0 40px; }
 .message { padding: 18px; color: var(--brume); }
 </style>
@@ -92,7 +93,7 @@ select option { font: 16px var(--texte); text-transform: none; color: var(--crem
 
 <main class="wrap">
   <h1>Course virtuelle</h1>
-  <p class="intro"><b>En direct</b> : chaque bateau est placé à son dernier point de passage, classé d'après ses temps, et les places se réajustent dès qu'un nouveau temps arrive. <b>Rejouer</b> : tous les bateaux de la catégorie partent ensemble pour comparer leurs courses. Cliquez sur un bateau pour voir ses temps.</p>
+  <p class="intro"><b>En direct</b> : chaque bateau avance à la vitesse de son dernier tronçon, puis se recale et les places se réajustent dès qu'un nouveau temps de passage arrive. <b>Rejouer</b> : tous les bateaux de la catégorie partent ensemble pour comparer leurs courses. Cliquez sur un bateau pour voir ses temps.</p>
 
   <div class="barre">
     <select id="categorie" aria-label="Catégorie"></select>
@@ -129,7 +130,10 @@ const fin1 = s => { const m = Math.floor(s / 60), r = (s - m * 60).toFixed(1); r
 const lire = async q => { const r = await fetch(CONNECTEUR + "?" + q, { cache: "no-store" }); if (!r.ok) throw new Error(r.status); return r.json(); };
 const distancePoint = label => label === "Arrivée" ? LONGUEUR : parseInt(label) || null;
 
-let mode = "direct";
+let mode = "direct", horloge = null;
+// Passages vus apparaître pendant que la page est ouverte : "dossard|distance" -> heure (ms) où on l'a vu
+let vus = new Map(), premiereLecture = true;
+const LATENCE = 12;   // secondes entre le passage réel et son arrivée sur la page (Time-Team + relecture)
 let epreuves = [], choix = null, donnees = null, bateaux = [], T = 0, Tmax = 1, vitesse = 30, enCours = false, dernierCadre = 0, selection = null, minuterie = null;
 
 // Pour chaque équipage : liste de [temps (s), distance (m)] à partir du départ.
@@ -143,7 +147,16 @@ function preparer(d) {
     }
     return { e, jalons, fini: jalons[jalons.length - 1][1] >= LONGUEUR, abandon: !["arrive", "course", "attente"].includes(e.etat) };
   });
-  donnees = { points };
+  // Heure de départ de l'épreuve (heure des Pays-Bas, UTC+1 en novembre) et ordre de départ
+  const dep = d.depart ? Date.parse(String(d.depart).replace(" ", "T") + "+01:00") : NaN;
+  bateaux.slice().sort((a, c) => (a.e.ordre ?? +a.e.dossard) - (c.e.ordre ?? +c.e.dossard)).forEach((b, i) => { b.idx = i; });
+  const maintenant = Date.now();
+  bateaux.forEach(b => b.jalons.slice(1).forEach(([t, m]) => {
+    const cle = b.e.dossard + "|" + m;
+    if (!vus.has(cle)) vus.set(cle, premiereLecture ? null : maintenant);   // null : déjà là à l'ouverture
+  }));
+  premiereLecture = false;
+  donnees = { points, dep };
   const avecTemps = bateaux.filter(b => b.jalons.length > 1);
   Tmax = Math.max(60, ...avecTemps.map(b => b.jalons[b.jalons.length - 1][0])) + 5;
 }
@@ -156,10 +169,72 @@ function position(b, t) {
   return j[j.length - 1][1];   // plus de temps connu : le bateau reste à son dernier passage
 }
 
+// ---- En direct : chaque bateau avance à la vitesse de son dernier tronçon ----
+function departBateau(b) {
+  // 1) un passage vu en direct donne l'heure de départ : heure vue - temps de passage - latence
+  for (let k = b.jalons.length - 1; k > 0; k--) {
+    const vu = vus.get(b.e.dossard + "|" + b.jalons[k][1]);
+    if (vu) return vu - (b.jalons[k][0] + LATENCE) * 1000;
+  }
+  // 2) sinon : départ de l'épreuve + rang de départ × intervalle (déduit des passages vus, 15 s par défaut)
+  return donnees.dep + b.idx * intervalle() * 1000;
+}
+function intervalle() {
+  const mesures = [];
+  bateaux.forEach(b => { if (b.idx > 0) for (let k = b.jalons.length - 1; k > 0; k--) {
+    const vu = vus.get(b.e.dossard + "|" + b.jalons[k][1]);
+    if (vu) { mesures.push((vu - (b.jalons[k][0] + LATENCE) * 1000 - donnees.dep) / 1000 / b.idx); break; }
+  } });
+  if (!mesures.length || isNaN(donnees.dep)) return 15;
+  mesures.sort((a, c) => a - c);
+  return Math.min(120, Math.max(5, mesures[Math.floor(mesures.length / 2)]));
+}
+function vitesseTypique() {   // vitesse médiane au premier tronçon, pour les bateaux sans passage
+  const v = bateaux.filter(b => b.jalons.length > 1).map(b => b.jalons[1][1] / b.jalons[1][0]).sort((a, c) => a - c);
+  return v.length ? v[Math.floor(v.length / 2)] : LONGUEUR / 1500;
+}
+function etatDirect(b, maintenant, vType) {
+  const j = b.jalons, der = j[j.length - 1];
+  if (b.fini) return { m: LONGUEUR, etat: "arrive", fin: der[0] };
+  if (b.abandon) return { m: der[1], etat: "abandon", fin: Infinity };
+  const depart = departBateau(b);
+  const t = (maintenant - depart) / 1000;
+  const vit = j.length > 1 ? (der[1] - j[j.length - 2][1]) / (der[0] - j[j.length - 2][0]) : vType;
+  const fin = der[0] + (LONGUEUR - der[1]) / vit;   // temps final projeté à cette vitesse
+  if (isNaN(t) || t < 0) return { m: der[1], etat: der[1] ? "estime" : "depart", fin, dans: isNaN(t) ? null : -t };
+  const suivant = [2000, 4000, LONGUEUR].find(x => x > der[1]) ?? LONGUEUR;
+  const m = Math.max(der[1], Math.min(der[1] + vit * (t - der[0]), suivant - 20));
+  return { m, etat: "estime", fin };
+}
+function dessinerDirect() {
+  if (!bateaux.length) { $("bassin").innerHTML = `<div class="message">Pas encore d'équipage dans cette catégorie.</div>`; return; }
+  const maintenant = Date.now(), vType = vitesseTypique();
+  const pos = bateaux.map(b => ({ b, ...etatDirect(b, maintenant, vType) }));
+  // Ordre : arrivés au temps final, puis bateaux sur l'eau au temps final projeté, puis ceux au départ
+  const groupe = p => p.etat === "arrive" ? 0 : p.etat === "abandon" ? 3 : p.etat === "depart" ? 2 : 1;
+  pos.sort((a, c) => groupe(a) - groupe(c) || (groupe(a) === 2 ? a.b.idx - c.b.idx : a.fin - c.fin));
+  const meilleur = Math.min(...pos.filter(p => p.etat === "arrive").map(p => p.fin));
+  const reperes = [2000, 4000].map(m => `<i class="repere" style="left:${m / LONGUEUR * 100}%"></i>`).join("") + `<i class="repere fin" style="left:100%"></i>`;
+  $("bassin").innerHTML = `<div class="regle"><span></span><span>Équipage</span><div class="eau" style="height:14px"><span style="left:0">Départ</span><span style="left:33.33%">2000 m</span><span style="left:66.66%">4000 m</span><span style="left:100%">Arrivée</span></div><span style="text-align:right;padding-right:10px">Où ?</span></div>`
+    + pos.map((p, i) => {
+      const e = p.b.e;
+      const info = p.etat === "arrive" ? (p.fin - meilleur < 0.05 ? fin1(p.fin) : "+" + fin1(p.fin - meilleur))
+        : p.etat === "abandon" ? (e.etat || "") : p.etat === "depart" ? "au départ" : "≈" + (Math.round(p.m / 10) * 10) + " m";
+      const cls = { arrive: "arrive", estime: "estime", depart: "attente", abandon: "attente" }[p.etat];
+      const rg = p.etat === "arrive" ? i + 1 : p.etat === "estime" ? "≈" + (i + 1) : "";
+      return `<div class="ligne${selection === e.dossard ? " choisi" : ""}" data-d="${esc(e.dossard)}">
+        <span class="rg"${p.etat === "estime" ? ' style="font-size:15px;color:var(--brume)"' : ""}>${rg}</span>
+        <span class="nom">N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}<small>${esc(e.nage || e.equipage)}</small></span>
+        <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i></div>
+        <span class="ecart${p.etat === "arrive" && i === 0 ? " t1" : ""}">${esc(info)}</span></div>`;
+    }).join("");
+  $("chrono").textContent = "";
+}
+
 function dessiner() {
-  if (mode === "direct") T = Tmax;   // en direct : chaque bateau à son dernier temps connu
+  if (mode === "direct") return dessinerDirect();
   const actifs = bateaux.filter(b => b.jalons.length > 1);
-  if (!actifs.length && mode !== "direct") { $("bassin").innerHTML = `<div class="message">Pas encore de temps de passage dans cette catégorie.</div>`; return; }
+  if (!actifs.length) { $("bassin").innerHTML = `<div class="message">Pas encore de temps de passage dans cette catégorie.</div>`; return; }
   const pos = actifs.map(b => ({ b, m: position(b, T), arrive: b.fini && T >= b.jalons[b.jalons.length - 1][0] }));
   // Classement à l'instant T : arrivés d'abord (au temps), puis les plus avancés
   pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.b.jalons[a.b.jalons.length - 1][0] - c.b.jalons[c.b.jalons.length - 1][0] : c.m - a.m));
@@ -177,12 +252,7 @@ function dessiner() {
         <span class="nom">N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}<small>${esc(e.nage || e.equipage)}</small></span>
         <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i></div>
         <span class="ecart${i === 0 ? " t1" : ""}">${esc(ecart)}</span></div>`;
-    }).join("")
-    // En direct : les bateaux sans temps attendent au départ (ou sont hors course)
-    + (mode !== "direct" ? "" : bateaux.filter(b => b.jalons.length <= 1).map(b => `<div class="ligne" data-d="${esc(b.e.dossard)}">
-        <span class="rg"></span><span class="nom">N°${esc(b.e.dossard)} · ${esc(b.e.club || b.e.equipage)}<small>${esc(b.e.nage || b.e.equipage)}</small></span>
-        <div class="eau">${reperes}<i class="bateau attente" style="left:2.5%"></i></div>
-        <span class="ecart">${esc(b.abandon ? b.e.etat : "au départ")}</span></div>`).join(""));
+    }).join("");
   $("chrono").textContent = mmss(T);
   $("curseur").value = Math.round(T / Tmax * 1000);
 }
@@ -223,6 +293,8 @@ function changerMode(m) {
   $("m-direct").setAttribute("aria-pressed", m === "direct"); $("m-rejouer").setAttribute("aria-pressed", m === "rejouer");
   $("commandes").hidden = $("lecture").hidden = m === "direct";
   T = Tmax;
+  clearInterval(horloge);
+  if (m === "direct") horloge = setInterval(dessiner, 400);   // les bateaux avancent en continu
   dessiner();
 }
 $("m-direct").onclick = () => changerMode("direct");
@@ -243,13 +315,15 @@ async function charger(garderT) {
     if (!garderT) { T = Tmax; }   // à l'ouverture : on montre l'état final, puis « Lancer » rejoue la course
     else if (!enCours && T >= ancienMax - 5) T = Tmax;
     const enEau = d.equipages.filter(e => e.etat === "course").length;
-    $("note").textContent = `${d.equipages.filter(e => e.etat === "arrive").length} arrivés · ${enEau} en course · ${d.equipages.length} inscrits. Temps relus toutes les 20 s.`
-      + " En direct, chaque bateau est placé à son dernier point de passage, et les places se réajustent à chaque nouveau temps. « Rejouer » relance la course avec tous les bateaux partis ensemble.";
+    $("note").textContent = `${d.equipages.filter(e => e.etat === "arrive").length} arrivés · ${enEau} en course · ${d.equipages.length} inscrits. Temps relus toutes les 10 s.`
+      + " En direct, chaque bateau avance à la vitesse de son dernier tronçon (au départ : vitesse moyenne de la catégorie) et se recale à chaque nouveau temps ;"
+      + " il s'arrête juste avant le point de passage suivant tant que son temps n'est pas arrivé. Les places « ≈ » sont estimées d'après le temps final projeté."
+      + " « Rejouer » relance la course avec tous les bateaux partis ensemble.";
     dessiner(); fiche();
   } catch (e) {
     $("bassin").innerHTML = `<div class="message">Temps indisponibles pour le moment, nouvel essai dans 20 s…</div>`;
   }
-  minuterie = setTimeout(() => charger(true), 20000);
+  minuterie = setTimeout(() => charger(true), mode === "direct" ? 10000 : 20000);
 }
 
 (async () => {
@@ -257,7 +331,7 @@ async function charger(garderT) {
   const p = new URLSearchParams(location.search).get("epreuve");
   choix = epreuves.some(x => x.id === p) ? p : epreuves[0].id;
   $("categorie").innerHTML = epreuves.map(ep => `<option value="${esc(ep.id)}"${ep.id === choix ? " selected" : ""}>${esc(ep.code)} · ${esc(ep.nom)}</option>`).join("");
-  $("categorie").onchange = () => { choix = $("categorie").value; selection = null; pause(); history.replaceState(null, "", "?epreuve=" + choix); charger(false); };
+  $("categorie").onchange = () => { choix = $("categorie").value; vus = new Map(); premiereLecture = true; selection = null; pause(); history.replaceState(null, "", "?epreuve=" + choix); charger(false); };
   await charger(false);
   changerMode("direct");
 })();
