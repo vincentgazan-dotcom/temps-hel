@@ -219,7 +219,8 @@ function dessinerDirect() {
   pos.sort((a, c) => groupe(a) - groupe(c) || (groupe(a) === 2 ? a.b.idx - c.b.idx : a.fin - c.fin));
   pos.forEach((p, k) => { p.rang = k; });
   const lead = pos[0];
-  pos.sort((a, c) => a.b.idx - c.b.idx);   // chaque bateau garde sa ligne (ordre de départ) ; seule sa place change
+  // Arrivés en haut dans l'ordre du classement ; les autres gardent leur ligne (ordre de départ)
+  pos.sort((a, c) => ((c.etat === "arrive") - (a.etat === "arrive")) || (a.etat === "arrive" ? a.rang - c.rang : a.b.idx - c.b.idx));
   const meilleur = Math.min(...pos.filter(p => p.etat === "arrive").map(p => p.fin));
   const reperes = [2000, 4000].map(m => `<i class="repere" style="left:${m / LONGUEUR * 100}%"></i>`).join("") + `<i class="repere fin" style="left:100%"></i>`;
   $("bassin").innerHTML = `<div class="regle"><span></span><span>Équipage</span><div class="eau" style="height:14px"><span style="left:0">Départ</span><span style="left:33.33%">2000 m</span><span style="left:66.66%">4000 m</span><span style="left:100%">Arrivée</span></div><span style="text-align:right;padding-right:10px">Où ?</span></div>`
@@ -247,7 +248,7 @@ function dessiner() {
   pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.b.jalons[a.b.jalons.length - 1][0] - c.b.jalons[c.b.jalons.length - 1][0] : c.m - a.m));
   pos.forEach((p, k) => { p.rang = k; });
   const lead = pos[0];
-  pos.sort((a, c) => a.b.idx - c.b.idx);   // chaque bateau garde sa ligne (ordre de départ) ; seule sa place change
+  pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.rang - c.rang : a.b.idx - c.b.idx));   // arrivés classés en haut, les autres gardent leur ligne
   const tete = lead ? lead.m : 0;
   const reperes = [2000, 4000].map(m => `<i class="repere" style="left:${m / LONGUEUR * 100}%"></i>`).join("") + `<i class="repere fin" style="left:100%"></i>`;
   $("bassin").innerHTML = `<div class="regle"><span></span><span>Équipage</span><div class="eau" style="height:14px"><span style="left:0">Départ</span><span style="left:33.33%">2000 m</span><span style="left:66.66%">4000 m</span><span style="left:100%">Arrivée</span></div><span style="text-align:right;padding-right:10px">Écart</span></div>`
