@@ -217,10 +217,13 @@ function dessinerDirect() {
   // Ordre : arrivés au temps final, puis bateaux sur l'eau au temps final projeté, puis ceux au départ
   const groupe = p => p.etat === "arrive" ? 0 : p.etat === "abandon" ? 3 : p.etat === "depart" ? 2 : 1;
   pos.sort((a, c) => groupe(a) - groupe(c) || (groupe(a) === 2 ? a.b.idx - c.b.idx : a.fin - c.fin));
+  pos.forEach((p, k) => { p.rang = k; });
+  const lead = pos[0];
+  pos.sort((a, c) => a.b.idx - c.b.idx);   // chaque bateau garde sa ligne (ordre de départ) ; seule sa place change
   const meilleur = Math.min(...pos.filter(p => p.etat === "arrive").map(p => p.fin));
   const reperes = [2000, 4000].map(m => `<i class="repere" style="left:${m / LONGUEUR * 100}%"></i>`).join("") + `<i class="repere fin" style="left:100%"></i>`;
   $("bassin").innerHTML = `<div class="regle"><span></span><span>Équipage</span><div class="eau" style="height:14px"><span style="left:0">Départ</span><span style="left:33.33%">2000 m</span><span style="left:66.66%">4000 m</span><span style="left:100%">Arrivée</span></div><span style="text-align:right;padding-right:10px">Où ?</span></div>`
-    + pos.map((p, i) => {
+    + pos.map((p, _k, _t, i = p.rang) => {
       const e = p.b.e;
       const info = p.etat === "arrive" ? (p.fin - meilleur < 0.05 ? fin1(p.fin) : "+" + fin1(p.fin - meilleur))
         : p.etat === "abandon" ? (e.etat || "") : p.etat === "depart" ? "au départ" : "≈" + (Math.round(p.m / 10) * 10) + " m";
@@ -242,14 +245,17 @@ function dessiner() {
   const pos = actifs.map(b => ({ b, m: position(b, T), arrive: b.fini && T >= b.jalons[b.jalons.length - 1][0] }));
   // Classement à l'instant T : arrivés d'abord (au temps), puis les plus avancés
   pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.b.jalons[a.b.jalons.length - 1][0] - c.b.jalons[c.b.jalons.length - 1][0] : c.m - a.m));
-  const tete = pos.length ? pos[0].m : 0;
+  pos.forEach((p, k) => { p.rang = k; });
+  const lead = pos[0];
+  pos.sort((a, c) => a.b.idx - c.b.idx);   // chaque bateau garde sa ligne (ordre de départ) ; seule sa place change
+  const tete = lead ? lead.m : 0;
   const reperes = [2000, 4000].map(m => `<i class="repere" style="left:${m / LONGUEUR * 100}%"></i>`).join("") + `<i class="repere fin" style="left:100%"></i>`;
   $("bassin").innerHTML = `<div class="regle"><span></span><span>Équipage</span><div class="eau" style="height:14px"><span style="left:0">Départ</span><span style="left:33.33%">2000 m</span><span style="left:66.66%">4000 m</span><span style="left:100%">Arrivée</span></div><span style="text-align:right;padding-right:10px">Écart</span></div>`
-    + pos.map((p, i) => {
+    + pos.map((p, _k, _t, i = p.rang) => {
       const e = p.b.e, der = p.b.jalons[p.b.jalons.length - 1];
       const meilleur = Math.min(...pos.filter(q => q.b.jalons.some(j => j[1] === der[1])).map(q => q.b.jalons.find(j => j[1] === der[1])[0]));
       const ecartDirect = (der[1] >= LONGUEUR ? "" : der[1] + " m · ") + (der[0] - meilleur < 0.05 ? "1er" : "+" + fin1(der[0] - meilleur));
-      const ecart = mode === "direct" ? ecartDirect : i === 0 ? "en tête" : p.arrive && pos[0].arrive ? "+" + fin1(p.b.jalons[p.b.jalons.length - 1][0] - pos[0].b.jalons[pos[0].b.jalons.length - 1][0]) : "-" + Math.round(tete - p.m) + " m";
+      const ecart = mode === "direct" ? ecartDirect : i === 0 ? "en tête" : p.arrive && lead.arrive ? "+" + fin1(p.b.jalons[p.b.jalons.length - 1][0] - lead.b.jalons[lead.b.jalons.length - 1][0]) : "-" + Math.round(tete - p.m) + " m";
       const cls = p.arrive ? "arrive" : i === 0 ? "tete" : "";
       return `<div class="ligne${selection === e.dossard ? " choisi" : ""}" data-d="${esc(e.dossard)}">
         <span class="rg">${i + 1}</span>
