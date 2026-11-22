@@ -107,7 +107,16 @@ function transformer(src) {
   const race = premier(src.race) || {};
   let locs = (race.timing_layout && race.timing_layout.timing_layout_locations)
     || ((premier(src.round) || {}).timing_layout || {}).timing_layout_locations || [];
-  locs = [...Object.values(locs)].sort((a, b) => b.distance - a.distance);
+  // Du départ vers l'arrivée. Selon les régates, « distance » est la distance restante
+  // (départ = 6000, arrivée = 0) ou la distance parcourue (départ = 0, arrivée = 6000).
+  locs = [...Object.values(locs)];
+  const dep = locs.find(l => l.name === 'start'), fin = locs.find(l => l.name === 'finish');
+  const restante = dep && fin ? dep.distance > fin.distance : true;
+  locs.sort((a, b) => {
+    if (a.name === 'start' || b.name === 'finish') return -1;
+    if (b.name === 'start' || a.name === 'finish') return 1;
+    return restante ? b.distance - a.distance : a.distance - b.distance;
+  });
   const points = locs.filter(l => l.name !== 'start')
     .map(l => ({ id: l.id, label: l.name === 'finish' ? 'Arrivée' : l.name }));
   const arrivee = points.length ? points[points.length - 1].id : null;
