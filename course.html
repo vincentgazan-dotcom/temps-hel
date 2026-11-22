@@ -80,6 +80,10 @@ select option { font: 16px var(--texte); text-transform: none; color: var(--crem
 #m-direct[aria-pressed="true"] { background: var(--rouge); border-color: var(--rouge); color: #fff; }
 [hidden] { display: none !important; }
 .bateau.estime { opacity: .85; }
+/* Place provisoire posée sur chaque bateau (pastille à l'arrière de la coque) */
+.num-bateau { position: absolute; top: 50%; transform: translate(-100%, -50%); margin-left: -32px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; background: var(--creme); color: var(--nuit); font: 700 11px/20px var(--mono); text-align: center; pointer-events: none; }
+.num-bateau.n1 { background: var(--or); }
+@media (max-width: 600px) { .num-bateau { margin-left: -24px; min-width: 18px; height: 18px; line-height: 18px; font-size: 10px; } }
 .note { font-size: 13px; color: var(--brume); margin: 14px 0 40px; }
 .message { padding: 18px; color: var(--brume); }
 </style>
@@ -225,7 +229,7 @@ function dessinerDirect() {
       return `<div class="ligne${selection === e.dossard ? " choisi" : ""}" data-d="${esc(e.dossard)}">
         <span class="rg"${p.etat === "estime" ? ' style="font-size:15px;color:var(--brume)"' : ""}>${rg}</span>
         <span class="nom">N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}<small>${esc(e.nage || e.equipage)}</small></span>
-        <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i></div>
+        <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i>${p.etat === "arrive" || p.etat === "estime" ? `<b class="num-bateau${i === 0 ? " n1" : ""}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%">${i + 1}</b>` : ""}</div>
         <span class="ecart${p.etat === "arrive" && i === 0 ? " t1" : ""}">${esc(info)}</span></div>`;
     }).join("");
   $("chrono").textContent = "";
@@ -250,7 +254,7 @@ function dessiner() {
       return `<div class="ligne${selection === e.dossard ? " choisi" : ""}" data-d="${esc(e.dossard)}">
         <span class="rg">${i + 1}</span>
         <span class="nom">N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}<small>${esc(e.nage || e.equipage)}</small></span>
-        <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i></div>
+        <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i><b class="num-bateau${i === 0 ? " n1" : ""}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%">${i + 1}</b></div>
         <span class="ecart${i === 0 ? " t1" : ""}">${esc(ecart)}</span></div>`;
     }).join("");
   $("chrono").textContent = mmss(T);
