@@ -136,6 +136,7 @@ function transformer(src) {
     const entry = c.entry || {};
     return {
       dossard: String(c.bib ?? ''),
+      ordre: Number(c.sort_order ?? c.bib) || null,   // ordre de départ
       equipage: entry.string || '',
       club: (entry.club && entry.club.code) || '',
       nage: entry.stroke_fullname || c.stroke_fullname || '',

@@ -77,6 +77,8 @@ select option { font: 16px var(--texte); text-transform: none; color: var(--crem
 .fiche table { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
 .fiche td, .fiche th { padding: 4px 14px 4px 0; text-align: left; }
 .fiche th { font: 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brume); font-weight: 400; }
+#m-direct[aria-pressed="true"] { background: var(--rouge); border-color: var(--rouge); color: #fff; }
+[hidden] { display: none !important; }
 .note { font-size: 13px; color: var(--brume); margin: 14px 0 40px; }
 .message { padding: 18px; color: var(--brume); }
 </style>
@@ -90,17 +92,22 @@ select option { font: 16px var(--texte); text-transform: none; color: var(--crem
 
 <main class="wrap">
   <h1>Course virtuelle</h1>
-  <p class="intro">Tous les bateaux d'une catégorie partent ensemble, comme sur un bassin en ligne, et avancent d'après leurs vrais temps de passage (2000 m, 4000 m, arrivée). Entre deux passages, la vitesse est supposée régulière. Cliquez sur un bateau pour voir ses temps.</p>
+  <p class="intro"><b>En direct</b> : chaque bateau est placé à son dernier point de passage, classé d'après ses temps, et les places se réajustent dès qu'un nouveau temps arrive. <b>Rejouer</b> : tous les bateaux de la catégorie partent ensemble pour comparer leurs courses. Cliquez sur un bateau pour voir ses temps.</p>
 
   <div class="barre">
     <select id="categorie" aria-label="Catégorie"></select>
+    <div class="vitesses" role="group" aria-label="Mode">
+      <button class="btn" id="m-direct" aria-pressed="true">● En direct</button><button class="btn" id="m-rejouer">Rejouer</button>
+    </div>
+  </div>
+  <div class="barre" id="commandes" hidden>
     <button class="btn principal" id="jouer">▶ Lancer</button>
     <button class="btn" id="zero">↺ Départ</button>
     <div class="vitesses" role="group" aria-label="Vitesse">
       <button class="btn" data-v="10">×10</button><button class="btn" data-v="30" aria-pressed="true">×30</button><button class="btn" data-v="60">×60</button>
     </div>
   </div>
-  <div class="lecture">
+  <div class="lecture" id="lecture" hidden>
     <input type="range" id="curseur" min="0" max="1000" value="0" step="1" aria-label="Temps de course">
     <div class="chrono" id="chrono">0:00</div>
   </div>
@@ -122,6 +129,7 @@ const fin1 = s => { const m = Math.floor(s / 60), r = (s - m * 60).toFixed(1); r
 const lire = async q => { const r = await fetch(CONNECTEUR + "?" + q, { cache: "no-store" }); if (!r.ok) throw new Error(r.status); return r.json(); };
 const distancePoint = label => label === "Arrivée" ? LONGUEUR : parseInt(label) || null;
 
+let mode = "direct";
 let epreuves = [], choix = null, donnees = null, bateaux = [], T = 0, Tmax = 1, vitesse = 30, enCours = false, dernierCadre = 0, selection = null, minuterie = null;
 
 // Pour chaque équipage : liste de [temps (s), distance (m)] à partir du départ.
@@ -134,10 +142,10 @@ function preparer(d) {
       if (s != null && s > jalons[jalons.length - 1][0]) jalons.push([s, p.m]);
     }
     return { e, jalons, fini: jalons[jalons.length - 1][1] >= LONGUEUR, abandon: !["arrive", "course", "attente"].includes(e.etat) };
-  }).filter(b => b.jalons.length > 1);
-  Tmax = Math.max(60, ...bateaux.map(b => b.jalons[b.jalons.length - 1][0])) + 5;
-  points.forEach(p => {});
+  });
   donnees = { points };
+  const avecTemps = bateaux.filter(b => b.jalons.length > 1);
+  Tmax = Math.max(60, ...avecTemps.map(b => b.jalons[b.jalons.length - 1][0])) + 5;
 }
 
 function position(b, t) {
@@ -149,22 +157,32 @@ function position(b, t) {
 }
 
 function dessiner() {
-  if (!bateaux.length) { $("bassin").innerHTML = `<div class="message">Pas encore de temps de passage dans cette catégorie.</div>`; return; }
-  const pos = bateaux.map(b => ({ b, m: position(b, T), arrive: b.fini && T >= b.jalons[b.jalons.length - 1][0] }));
+  if (mode === "direct") T = Tmax;   // en direct : chaque bateau à son dernier temps connu
+  const actifs = bateaux.filter(b => b.jalons.length > 1);
+  if (!actifs.length && mode !== "direct") { $("bassin").innerHTML = `<div class="message">Pas encore de temps de passage dans cette catégorie.</div>`; return; }
+  const pos = actifs.map(b => ({ b, m: position(b, T), arrive: b.fini && T >= b.jalons[b.jalons.length - 1][0] }));
   // Classement à l'instant T : arrivés d'abord (au temps), puis les plus avancés
   pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.b.jalons[a.b.jalons.length - 1][0] - c.b.jalons[c.b.jalons.length - 1][0] : c.m - a.m));
-  const tete = pos[0].m;
+  const tete = pos.length ? pos[0].m : 0;
   const reperes = [2000, 4000].map(m => `<i class="repere" style="left:${m / LONGUEUR * 100}%"></i>`).join("") + `<i class="repere fin" style="left:100%"></i>`;
   $("bassin").innerHTML = `<div class="regle"><span></span><span>Équipage</span><div class="eau" style="height:14px"><span style="left:0">Départ</span><span style="left:33.33%">2000 m</span><span style="left:66.66%">4000 m</span><span style="left:100%">Arrivée</span></div><span style="text-align:right;padding-right:10px">Écart</span></div>`
     + pos.map((p, i) => {
-      const e = p.b.e, ecart = i === 0 ? "en tête" : p.arrive && pos[0].arrive ? "+" + fin1(p.b.jalons[p.b.jalons.length - 1][0] - pos[0].b.jalons[pos[0].b.jalons.length - 1][0]) : "-" + Math.round(tete - p.m) + " m";
+      const e = p.b.e, der = p.b.jalons[p.b.jalons.length - 1];
+      const meilleur = Math.min(...pos.filter(q => q.b.jalons.some(j => j[1] === der[1])).map(q => q.b.jalons.find(j => j[1] === der[1])[0]));
+      const ecartDirect = (der[1] >= LONGUEUR ? "" : der[1] + " m · ") + (der[0] - meilleur < 0.05 ? "1er" : "+" + fin1(der[0] - meilleur));
+      const ecart = mode === "direct" ? ecartDirect : i === 0 ? "en tête" : p.arrive && pos[0].arrive ? "+" + fin1(p.b.jalons[p.b.jalons.length - 1][0] - pos[0].b.jalons[pos[0].b.jalons.length - 1][0]) : "-" + Math.round(tete - p.m) + " m";
       const cls = p.arrive ? "arrive" : i === 0 ? "tete" : "";
       return `<div class="ligne${selection === e.dossard ? " choisi" : ""}" data-d="${esc(e.dossard)}">
         <span class="rg">${i + 1}</span>
         <span class="nom">N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}<small>${esc(e.nage || e.equipage)}</small></span>
         <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i></div>
         <span class="ecart${i === 0 ? " t1" : ""}">${esc(ecart)}</span></div>`;
-    }).join("");
+    }).join("")
+    // En direct : les bateaux sans temps attendent au départ (ou sont hors course)
+    + (mode !== "direct" ? "" : bateaux.filter(b => b.jalons.length <= 1).map(b => `<div class="ligne" data-d="${esc(b.e.dossard)}">
+        <span class="rg"></span><span class="nom">N°${esc(b.e.dossard)} · ${esc(b.e.club || b.e.equipage)}<small>${esc(b.e.nage || b.e.equipage)}</small></span>
+        <div class="eau">${reperes}<i class="bateau attente" style="left:2.5%"></i></div>
+        <span class="ecart">${esc(b.abandon ? b.e.etat : "au départ")}</span></div>`).join(""));
   $("chrono").textContent = mmss(T);
   $("curseur").value = Math.round(T / Tmax * 1000);
 }
@@ -200,6 +218,15 @@ $("bassin").addEventListener("pointerdown", ev => {
   const l = ev.target.closest(".ligne"); if (!l) return;
   selection = l.dataset.d; dessiner(); fiche();
 });
+function changerMode(m) {
+  mode = m; pause();
+  $("m-direct").setAttribute("aria-pressed", m === "direct"); $("m-rejouer").setAttribute("aria-pressed", m === "rejouer");
+  $("commandes").hidden = $("lecture").hidden = m === "direct";
+  T = Tmax;
+  dessiner();
+}
+$("m-direct").onclick = () => changerMode("direct");
+$("m-rejouer").onclick = () => changerMode("rejouer");
 $("jouer").onclick = () => enCours ? pause() : jouer();
 $("zero").onclick = () => { T = 0; dessiner(); };
 $("curseur").oninput = () => { T = $("curseur").value / 1000 * Tmax; dessiner(); };
@@ -216,8 +243,8 @@ async function charger(garderT) {
     if (!garderT) { T = Tmax; }   // à l'ouverture : on montre l'état final, puis « Lancer » rejoue la course
     else if (!enCours && T >= ancienMax - 5) T = Tmax;
     const enEau = d.equipages.filter(e => e.etat === "course").length;
-    $("note").textContent = `${d.equipages.filter(e => e.etat === "arrive").length} arrivés · ${enEau} en course · ${d.equipages.length} inscrits. Mise à jour automatique toutes les 20 s.`
-      + (enEau ? " Les bateaux encore en course restent à leur dernier point de passage." : "");
+    $("note").textContent = `${d.equipages.filter(e => e.etat === "arrive").length} arrivés · ${enEau} en course · ${d.equipages.length} inscrits. Temps relus toutes les 20 s.`
+      + " En direct, chaque bateau est placé à son dernier point de passage, et les places se réajustent à chaque nouveau temps. « Rejouer » relance la course avec tous les bateaux partis ensemble.";
     dessiner(); fiche();
   } catch (e) {
     $("bassin").innerHTML = `<div class="message">Temps indisponibles pour le moment, nouvel essai dans 20 s…</div>`;
@@ -231,7 +258,8 @@ async function charger(garderT) {
   choix = epreuves.some(x => x.id === p) ? p : epreuves[0].id;
   $("categorie").innerHTML = epreuves.map(ep => `<option value="${esc(ep.id)}"${ep.id === choix ? " selected" : ""}>${esc(ep.code)} · ${esc(ep.nom)}</option>`).join("");
   $("categorie").onchange = () => { choix = $("categorie").value; selection = null; pause(); history.replaceState(null, "", "?epreuve=" + choix); charger(false); };
-  charger(false);
+  await charger(false);
+  changerMode("direct");
 })();
 </script>
 </body>
