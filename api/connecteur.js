@@ -189,6 +189,12 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Access-Control-Allow-Origin', '*');
   let donnees = null, duree = CACHE_SECONDES;
+  if (q.brut && IDS.includes(q.brut)) {   // aide au réglage : un équipage brut de Time-Team
+    const src = await telecharger(`${API_BASE}/event/${q.brut}/final`);
+    const crews = src && src.round_crew ? Object.values(src.round_crew) : [];
+    res.setHeader('Cache-Control', 'no-store');
+    return res.end(JSON.stringify({ cles: src ? Object.keys(src) : null, race: src && premier(src.race), round: src && premier(src.round), crew: crews.find(c => c.times && Object.keys(c.times).length) || crews[0] || null }, null, 1));
+  }
   if ('liste' in q) {
     donnees = await construireListe();
     duree = CACHE_LISTE;
