@@ -90,6 +90,17 @@ async function telecharger(url) {
 
 const premier = o => (o ? Object.values(o)[0] : undefined);
 
+// "24:42.5", "1:02:03,4" -> secondes
+function enSecondes(txt) {
+  const m = /^(?:(\d+):)?(\d+):(\d+(?:[.,]\d+)?)$/.exec(String(txt ?? '').trim());
+  return m ? (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + parseFloat(m[3].replace(',', '.')) : null;
+}
+function ecartTexte(s) {
+  s = Math.round(s * 10) / 10;
+  const m = Math.floor(s / 60), r = (s - m * 60).toFixed(1);
+  return m ? `${m}:${r.padStart(4, '0')}` : r;
+}
+
 function transformer(src) {
   if (!src || !src.round_crew || !Object.keys(src.round_crew).length) return null;
   const ev = premier(src.event) || {};
@@ -124,9 +135,33 @@ function transformer(src) {
     };
   });
 
+  // Temps final officiel (avec pénalités éventuelles) à la place du temps brut d'arrivée.
+  Object.values(src.round_crew).forEach((c, i) => {
+    const res = String(c.adjusted_result ?? '').trim(), e = equipages[i];
+    if (arrivee && e.temps[arrivee] && /^[\d:.,]+$/.test(res) && enSecondes(res) != null) e.temps[arrivee].temps = res;
+  });
+  // Rangs et écarts recalculés dans la catégorie, au temps (Time-Team les donne parfois
+  // sur toute la vague de départ, toutes catégories mélangées).
+  for (const p of points) {
+    const passes = equipages
+      .filter(e => e.temps[p.id] && enSecondes(e.temps[p.id].temps) != null && (p.id !== arrivee || e.etat === 'arrive'))
+      .sort((a, b) => enSecondes(a.temps[p.id].temps) - enSecondes(b.temps[p.id].temps));
+    const tete = passes.length ? enSecondes(passes[0].temps[p.id].temps) : 0;
+    let precedent = null, rang = 0;
+    passes.forEach((e, i) => {
+      const s = enSecondes(e.temps[p.id].temps);
+      if (s !== precedent) rang = i + 1;
+      precedent = s;
+      e.temps[p.id].rang = rang;
+      e.temps[p.id].ecart = rang === 1 ? null : '+' + ecartTexte(s - tete);
+    });
+    equipages.forEach(e => { if (e.temps[p.id] && !passes.includes(e)) { e.temps[p.id].rang = null; e.temps[p.id].ecart = null; } });
+  }
+
+  const officiel = EVENEMENTS.find(x => x[0] === ev.id);
   return {
     heure: Math.floor(Number(src.timestamp || Date.now()) / 1000),
-    evenement: { id: ev.id || '', ...traduire(ev.code, ev.name) },
+    evenement: { id: ev.id || '', ...traduire(officiel ? officiel[1] : ev.code, officiel ? officiel[2] : ev.name) },
     depart: race.start_datetime ?? null,
     points,
     equipages,
