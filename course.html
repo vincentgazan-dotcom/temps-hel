@@ -226,7 +226,7 @@ function changerMode(m) {
   dessiner();
 }
 $("m-direct").onclick = () => changerMode("direct");
-$("m-rejouer").onclick = () => changerMode("rejouer");
+$("m-rejouer").onclick = () => { changerMode("rejouer"); T = 0; jouer(); };   // « Rejouer » relance tout de suite la course
 $("jouer").onclick = () => enCours ? pause() : jouer();
 $("zero").onclick = () => { T = 0; dessiner(); };
 $("curseur").oninput = () => { T = $("curseur").value / 1000 * Tmax; dessiner(); };
