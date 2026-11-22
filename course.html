@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hel van het Noorden 2026 · Course virtuelle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Course virtuelle : les bateaux d'une catégorie partent ensemble (comme en ligne)
+   et avancent d'après leurs temps de passage réels. Même habillage que la page des temps. */
+:root {
+  --nuit: #0c1a3d; --nuit-2: #122552; --nuit-3: #1a3168;
+  --or: #ff7f00; --rouge: #ae1c28; --bleu: #21468b;
+  --creme: #ffffff; --brume: #a9b6d3; --trait: #26407a; --ok: #6cc59a;
+  --titre: "Anton", "Arial Narrow", Impact, sans-serif;
+  --mono: "Space Mono", ui-monospace, Menlo, Consolas, monospace;
+  --texte: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--nuit); color: var(--creme); font: 16px/1.45 var(--texte); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; }
+.top { background: var(--nuit-2); border-bottom: 1px solid var(--trait); position: relative; }
+.top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 6px; background: linear-gradient(var(--rouge) 0 33.3%, #fff 33.3% 66.6%, var(--bleu) 66.6%); }
+.top .wrap { padding-block: 12px; display: flex; align-items: center; gap: 14px; }
+.logo-regate { height: 52px; width: auto; max-width: 140px; object-fit: contain; background: #fff; padding: 3px; border-radius: 4px; flex: none; }
+.logo { display: grid; place-items: center; width: 42px; height: 42px; border: 1.5px solid var(--or); color: var(--or); font: 15px var(--titre); flex: none; }
+.marque b { display: block; font: 18px/1.1 var(--titre); letter-spacing: .04em; text-transform: uppercase; }
+.marque span { font: 10.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--brume); }
+.retour { margin-left: auto; font: 700 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--or); text-decoration: none; border: 1px solid var(--or); padding: 8px 12px; white-space: nowrap; }
+.retour:hover { background: var(--or); color: var(--nuit); }
+
+h1 { font: clamp(38px, 8vw, 72px)/.95 var(--titre); text-transform: uppercase; color: var(--or); margin: 30px 0 6px; }
+.intro { color: var(--brume); max-width: 760px; margin: 0 0 18px; font-size: 15px; }
+
+.barre { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-top: 1px solid var(--trait); padding-top: 16px; }
+select { appearance: none; font: 20px/1.1 var(--titre); letter-spacing: .04em; text-transform: uppercase; color: var(--nuit); background: var(--or); border: 0; padding: 10px 14px 9px; max-width: 100%; cursor: pointer; }
+select option { font: 16px var(--texte); text-transform: none; color: var(--creme); background: var(--nuit-2); }
+.btn { font: 700 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--creme); background: transparent; border: 1px solid var(--trait); padding: 10px 14px 9px; cursor: pointer; }
+.btn:hover { border-color: var(--or); }
+.btn[aria-pressed="true"], .btn.principal { background: var(--or); border-color: var(--or); color: var(--nuit); }
+.vitesses { display: flex; gap: 4px; }
+
+.lecture { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+.lecture input[type=range] { flex: 1; accent-color: var(--or); }
+.chrono { font: clamp(32px, 6vw, 48px)/1 var(--titre); font-variant-numeric: tabular-nums; min-width: 5.2ch; text-align: right; }
+
+/* Le bassin : une ligne d'eau par équipage */
+.bassin { margin-top: 16px; border: 1px solid var(--trait); background: var(--nuit-2); }
+.regle, .ligne { display: grid; grid-template-columns: 34px minmax(90px, 190px) 1fr 72px; align-items: center; }
+.regle { border-bottom: 1px solid var(--or); font: 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brume); padding: 8px 0; }
+.regle .eau { position: relative; height: 14px; }
+.regle .eau span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.regle .eau span:first-child { transform: none; } .regle .eau span:last-child { transform: translateX(-100%); color: var(--or); }
+.ligne { border-bottom: 1px solid var(--trait); min-height: 38px; cursor: pointer; }
+.ligne:last-child { border-bottom: 0; }
+.ligne:hover, .ligne.choisi { background: var(--nuit-3); }
+.ligne .rg { font: 20px/1 var(--titre); text-align: center; }
+.ligne .nom { font: 700 12px var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+.ligne .nom small { display: block; font: 400 12px var(--texte); color: var(--brume); overflow: hidden; text-overflow: ellipsis; }
+.eau { position: relative; height: 38px; margin-inline: 10px; }
+.eau::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed var(--trait); }
+.repere { position: absolute; top: 4px; bottom: 4px; border-left: 1px solid var(--trait); }
+.repere.fin { border-left: 2px solid var(--or); }
+.bateau { position: absolute; top: 50%; width: 30px; height: 12px; margin-left: -30px; transform: translateY(-50%); background: var(--creme); clip-path: polygon(0 50%, 18% 0, 100% 35%, 100% 65%, 18% 100%); transition: none; }
+.bateau.tete { background: var(--or); }
+.bateau.arrive { background: var(--ok); }
+.bateau.attente { opacity: .35; }
+.ligne .ecart { font: 700 12px var(--mono); text-align: right; padding-right: 10px; font-variant-numeric: tabular-nums; color: var(--brume); }
+.ligne .ecart.t1 { color: var(--or); }
+@media (max-width: 600px) { .regle, .ligne { grid-template-columns: 26px 84px 1fr 56px; } .eau { margin-inline: 6px; } .bateau { width: 22px; height: 10px; margin-left: -22px; } }
+
+.fiche { margin-top: 14px; border: 1px solid var(--or); background: var(--nuit-2); padding: 12px 14px; }
+.fiche b { font: 22px/1.1 var(--titre); text-transform: uppercase; letter-spacing: .03em; }
+.fiche table { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.fiche td, .fiche th { padding: 4px 14px 4px 0; text-align: left; }
+.fiche th { font: 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brume); font-weight: 400; }
+.note { font-size: 13px; color: var(--brume); margin: 14px 0 40px; }
+.message { padding: 18px; color: var(--brume); }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a href="https://www.helvanhetnoorden.nl/" target="_blank" rel="noopener" style="display:contents"><img class="logo-regate" alt="Hel van het Noorden" src="https://cdn.time-team.nl/media/regatta/thumb/e349fa9b-d75c-43dd-b0c6-47347c3a9feb.png" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo',textContent:'HvhN'}))"></a>
+  <div class="marque"><b>Hel van het Noorden</b><span>49ᵉ édition · Groningue · 22 novembre 2026</span></div>
+  <a class="retour" href="/">← Temps</a>
+</div></header>
+
+<main class="wrap">
+  <h1>Course virtuelle</h1>
+  <p class="intro">Tous les bateaux d'une catégorie partent ensemble, comme sur un bassin en ligne, et avancent d'après leurs vrais temps de passage (2000 m, 4000 m, arrivée). Entre deux passages, la vitesse est supposée régulière. Cliquez sur un bateau pour voir ses temps.</p>
+
+  <div class="barre">
+    <select id="categorie" aria-label="Catégorie"></select>
+    <button class="btn principal" id="jouer">▶ Lancer</button>
+    <button class="btn" id="zero">↺ Départ</button>
+    <div class="vitesses" role="group" aria-label="Vitesse">
+      <button class="btn" data-v="10">×10</button><button class="btn" data-v="30" aria-pressed="true">×30</button><button class="btn" data-v="60">×60</button>
+    </div>
+  </div>
+  <div class="lecture">
+    <input type="range" id="curseur" min="0" max="1000" value="0" step="1" aria-label="Temps de course">
+    <div class="chrono" id="chrono">0:00</div>
+  </div>
+
+  <div class="bassin" id="bassin"><div class="message">Chargement…</div></div>
+  <div id="fiche"></div>
+  <p class="note" id="note"></p>
+</main>
+
+<script>
+const CONNECTEUR = "/api/connecteur";
+const LONGUEUR = 6000;   // parcours de la Hel van het Noorden (m)
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const secondes = txt => { const m = /^(?:(\d+):)?(\d+):(\d+(?:[.,]\d+)?)$/.exec(String(txt ?? "").trim()); return m ? (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + parseFloat(m[3].replace(",", ".")) : null; };
+const mmss = s => { s = Math.max(0, s); const m = Math.floor(s / 60), r = Math.floor(s % 60); return m + ":" + String(r).padStart(2, "0"); };
+const fin1 = s => { const m = Math.floor(s / 60), r = (s - m * 60).toFixed(1); return m ? m + ":" + r.padStart(4, "0") : r; };
+const lire = async q => { const r = await fetch(CONNECTEUR + "?" + q, { cache: "no-store" }); if (!r.ok) throw new Error(r.status); return r.json(); };
+const distancePoint = label => label === "Arrivée" ? LONGUEUR : parseInt(label) || null;
+
+let epreuves = [], choix = null, donnees = null, bateaux = [], T = 0, Tmax = 1, vitesse = 30, enCours = false, dernierCadre = 0, selection = null, minuterie = null;
+
+// Pour chaque équipage : liste de [temps (s), distance (m)] à partir du départ.
+function preparer(d) {
+  const points = (d.points || []).map(p => ({ id: p.id, label: p.label, m: distancePoint(p.label) })).filter(p => p.m);
+  bateaux = d.equipages.map(e => {
+    const jalons = [[0, 0]];
+    for (const p of points) {
+      const t = e.temps && e.temps[p.id], s = t ? secondes(t.temps) : null;
+      if (s != null && s > jalons[jalons.length - 1][0]) jalons.push([s, p.m]);
+    }
+    return { e, jalons, fini: jalons[jalons.length - 1][1] >= LONGUEUR, abandon: !["arrive", "course", "attente"].includes(e.etat) };
+  }).filter(b => b.jalons.length > 1);
+  Tmax = Math.max(60, ...bateaux.map(b => b.jalons[b.jalons.length - 1][0])) + 5;
+  points.forEach(p => {});
+  donnees = { points };
+}
+
+function position(b, t) {
+  const j = b.jalons;
+  for (let i = 1; i < j.length; i++) {
+    if (t <= j[i][0]) { const [t0, d0] = j[i - 1], [t1, d1] = j[i]; return d0 + (d1 - d0) * (t - t0) / (t1 - t0); }
+  }
+  return j[j.length - 1][1];   // plus de temps connu : le bateau reste à son dernier passage
+}
+
+function dessiner() {
+  if (!bateaux.length) { $("bassin").innerHTML = `<div class="message">Pas encore de temps de passage dans cette catégorie.</div>`; return; }
+  const pos = bateaux.map(b => ({ b, m: position(b, T), arrive: b.fini && T >= b.jalons[b.jalons.length - 1][0] }));
+  // Classement à l'instant T : arrivés d'abord (au temps), puis les plus avancés
+  pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.b.jalons[a.b.jalons.length - 1][0] - c.b.jalons[c.b.jalons.length - 1][0] : c.m - a.m));
+  const tete = pos[0].m;
+  const reperes = [2000, 4000].map(m => `<i class="repere" style="left:${m / LONGUEUR * 100}%"></i>`).join("") + `<i class="repere fin" style="left:100%"></i>`;
+  $("bassin").innerHTML = `<div class="regle"><span></span><span>Équipage</span><div class="eau" style="height:14px"><span style="left:0">Départ</span><span style="left:33.33%">2000 m</span><span style="left:66.66%">4000 m</span><span style="left:100%">Arrivée</span></div><span style="text-align:right;padding-right:10px">Écart</span></div>`
+    + pos.map((p, i) => {
+      const e = p.b.e, ecart = i === 0 ? "en tête" : p.arrive && pos[0].arrive ? "+" + fin1(p.b.jalons[p.b.jalons.length - 1][0] - pos[0].b.jalons[pos[0].b.jalons.length - 1][0]) : "-" + Math.round(tete - p.m) + " m";
+      const cls = p.arrive ? "arrive" : i === 0 ? "tete" : "";
+      return `<div class="ligne${selection === e.dossard ? " choisi" : ""}" data-d="${esc(e.dossard)}">
+        <span class="rg">${i + 1}</span>
+        <span class="nom">N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}<small>${esc(e.nage || e.equipage)}</small></span>
+        <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i></div>
+        <span class="ecart${i === 0 ? " t1" : ""}">${esc(ecart)}</span></div>`;
+    }).join("");
+  $("chrono").textContent = mmss(T);
+  $("curseur").value = Math.round(T / Tmax * 1000);
+}
+
+function fiche() {
+  const b = bateaux.find(x => x.e.dossard === selection);
+  if (!b) { $("fiche").innerHTML = ""; return; }
+  const e = b.e, pts = donnees.points;
+  const lignes = pts.map((p, k) => {
+    const t = e.temps && e.temps[p.id];
+    if (!t) return `<tr><td>${esc(p.label)}</td><td>–</td><td></td><td></td></tr>`;
+    const s = secondes(t.temps); let tr = "";
+    for (let i = k - 1; i >= -1; i--) { const av = i < 0 ? { temps: "0:00" } : e.temps[pts[i].id]; if (av) { tr = fin1(s - secondes(av.temps)); break; } }
+    return `<tr><td>${esc(p.label)}</td><td><b style="font:700 16px var(--texte)">${esc(t.temps)}</b></td><td>${esc(t.rang ? t.rang + (t.rang === 1 ? "er" : "e") : "")}</td><td>(${esc(tr)})</td></tr>`;
+  }).join("");
+  $("fiche").innerHTML = `<div class="fiche"><b>N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}</b> <span style="color:var(--brume)">${esc([e.equipage, e.nage].filter(Boolean).join(" · "))}</span>
+    <table><tr><th>Point</th><th>Temps</th><th>Place</th><th>Tronçon</th></tr>${lignes}</table></div>`;
+}
+
+function boucle(now) {
+  if (!enCours) return;
+  const dt = dernierCadre ? (now - dernierCadre) / 1000 : 0;
+  dernierCadre = now;
+  T = Math.min(Tmax, T + dt * vitesse);
+  dessiner();
+  if (T >= Tmax) { pause(); return; }
+  requestAnimationFrame(boucle);
+}
+function jouer() { if (T >= Tmax) T = 0; enCours = true; dernierCadre = 0; $("jouer").textContent = "❚❚ Pause"; requestAnimationFrame(boucle); }
+function pause() { enCours = false; $("jouer").textContent = "▶ Lancer"; }
+// Clic sur une ligne (écouté sur le bassin, car les lignes sont redessinées pendant l'animation)
+$("bassin").addEventListener("pointerdown", ev => {
+  const l = ev.target.closest(".ligne"); if (!l) return;
+  selection = l.dataset.d; dessiner(); fiche();
+});
+$("jouer").onclick = () => enCours ? pause() : jouer();
+$("zero").onclick = () => { T = 0; dessiner(); };
+$("curseur").oninput = () => { T = $("curseur").value / 1000 * Tmax; dessiner(); };
+document.querySelectorAll("[data-v]").forEach(b => b.onclick = () => {
+  vitesse = +b.dataset.v; document.querySelectorAll("[data-v]").forEach(x => x.setAttribute("aria-pressed", x === b));
+});
+
+async function charger(garderT) {
+  clearTimeout(minuterie);
+  try {
+    const d = await lire("event=" + encodeURIComponent(choix));
+    const ancienMax = Tmax;
+    preparer(d);
+    if (!garderT) { T = Tmax; }   // à l'ouverture : on montre l'état final, puis « Lancer » rejoue la course
+    else if (!enCours && T >= ancienMax - 5) T = Tmax;
+    const enEau = d.equipages.filter(e => e.etat === "course").length;
+    $("note").textContent = `${d.equipages.filter(e => e.etat === "arrive").length} arrivés · ${enEau} en course · ${d.equipages.length} inscrits. Mise à jour automatique toutes les 20 s.`
+      + (enEau ? " Les bateaux encore en course restent à leur dernier point de passage." : "");
+    dessiner(); fiche();
+  } catch (e) {
+    $("bassin").innerHTML = `<div class="message">Temps indisponibles pour le moment, nouvel essai dans 20 s…</div>`;
+  }
+  minuterie = setTimeout(() => charger(true), 20000);
+}
+
+(async () => {
+  try { epreuves = await lire("liste"); } catch (e) { $("bassin").innerHTML = `<div class="message">Impossible de lire la liste des épreuves.</div>`; return; }
+  const p = new URLSearchParams(location.search).get("epreuve");
+  choix = epreuves.some(x => x.id === p) ? p : epreuves[0].id;
+  $("categorie").innerHTML = epreuves.map(ep => `<option value="${esc(ep.id)}"${ep.id === choix ? " selected" : ""}>${esc(ep.code)} · ${esc(ep.nom)}</option>`).join("");
+  $("categorie").onchange = () => { choix = $("categorie").value; selection = null; pause(); history.replaceState(null, "", "?epreuve=" + choix); charger(false); };
+  charger(false);
+})();
+</script>
+</body>
+</html>

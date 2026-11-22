@@ -81,6 +81,8 @@ h1 em { font-style: normal; color: var(--or); }
 .vues button { font: 700 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--creme); background: transparent; border: 1px solid var(--trait); padding: 9px 14px 8px; cursor: pointer; }
 .vues button:hover { border-color: var(--or); }
 .vues button[aria-pressed="true"] { background: var(--or); border-color: var(--or); color: var(--nuit); }
+.lien-course { order: 9; font: 700 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--or); border: 1px dashed var(--or); padding: 9px 14px 8px; text-decoration: none; }
+.lien-course:hover { background: var(--or); color: var(--nuit); }
 .vues .pdf { margin-left: auto; border-color: var(--or); color: var(--or); }
 .vues button:focus-visible { outline: 2px solid var(--creme); outline-offset: 2px; }
 @media (max-width: 560px) { .vues .pdf { margin-left: 0; } }
@@ -252,6 +254,7 @@ tr.neuf td { animation: eclair 2.6s ease-out; }
   <div class="demo" id="demo" hidden><b>Démonstration</b>Données simulées. Une fois sur votre site, la page affiche les vrais temps Time-Team.</div>
   <div class="titre-impression" id="titre-impression"></div>
   <div class="vues" role="group" aria-label="Affichage">
+    <a class="lien-course" href="/course.html">Course virtuelle ›</a>
     <button type="button" data-vue="course" aria-pressed="true">Par course</button>
     <button type="button" data-vue="tous" aria-pressed="false">Tous les classements</button>
     <button type="button" id="pdf" class="pdf">⤓ Exporter en PDF</button>
