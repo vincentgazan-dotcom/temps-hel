@@ -86,7 +86,19 @@ select option { font: 16px var(--texte); text-transform: none; color: var(--crem
 @media (max-width: 600px) { .num-bateau { margin-left: -24px; min-width: 18px; height: 18px; line-height: 18px; font-size: 10px; } }
 .note { font-size: 13px; color: var(--brume); margin: 14px 0 40px; }
 .message { padding: 18px; color: var(--brume); }
+/* Carte du parcours */
+#carte { height: 380px; margin-top: 16px; border: 1px solid var(--trait); background: var(--nuit-2); }
+@media (max-width: 600px) { #carte { height: 300px; } }
+.carte-info { font-size: 13px; color: var(--brume); margin-top: 6px; }
+.pion { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fff; color: var(--nuit); font: 700 11px/1 var(--mono); border: 2px solid var(--nuit); box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.pion.n1 { background: var(--or); }
+.pion.arrive { background: var(--ok); }
+.pion.choisi { border-color: var(--or); transform: scale(1.25); }
+.borne { font: 700 10px var(--mono); color: var(--nuit); background: var(--or); padding: 2px 5px; white-space: nowrap; border-radius: 2px; }
+.leaflet-container { font-family: var(--texte); }
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -117,6 +129,8 @@ select option { font: 16px var(--texte); text-transform: none; color: var(--crem
     <div class="chrono" id="chrono">0:00</div>
   </div>
 
+  <div id="carte" hidden></div>
+  <div class="carte-info" id="carte-info"></div>
   <div class="bassin" id="bassin"><div class="message">Chargement…</div></div>
   <div id="fiche"></div>
   <p class="note" id="note"></p>
@@ -218,6 +232,7 @@ function dessinerDirect() {
   const groupe = p => p.etat === "arrive" ? 0 : p.etat === "abandon" ? 3 : p.etat === "depart" ? 2 : 1;
   pos.sort((a, c) => groupe(a) - groupe(c) || (groupe(a) === 2 ? a.b.idx - c.b.idx : a.fin - c.fin));
   pos.forEach((p, k) => { p.rang = k; });
+  majCarte(pos.filter(p => p.etat === "arrive" || p.etat === "estime").map(p => ({ b: p.b, m: p.m, rang: p.rang, arrive: p.etat === "arrive" })));
   const lead = pos[0];
   // Arrivés en haut dans l'ordre du classement ; les autres gardent leur ligne (ordre de départ)
   pos.sort((a, c) => ((c.etat === "arrive") - (a.etat === "arrive")) || (a.etat === "arrive" ? a.rang - c.rang : a.b.idx - c.b.idx));
@@ -239,6 +254,124 @@ function dessinerDirect() {
   $("chrono").textContent = "";
 }
 
+
+// ================= Carte du parcours (OpenStreetMap) =================
+// Le tracé de la voie d'eau est lu sur OpenStreetMap, puis on garde le morceau
+// entre les bornes kilométriques de départ et d'arrivée. Pour une autre régate : changer PARCOURS.
+const PARCOURS = {
+  voie: "Eemskanaal",                       // nom de la voie d'eau dans OpenStreetMap
+  bbox: "53.20,6.55,53.36,6.96",            // zone de recherche (sud, ouest, nord, est)
+  origineKm: [53.3270, 6.9230],             // extrémité où le kilométrage vaut 0 (Delfzijl)
+  kmDepart: 17, kmArrivee: 23,              // règlement 2026 : « du kilomètre 17 au kilomètre 23 »
+};
+let carte = null, trace = null, pions = new Map();
+
+const rad = x => x * Math.PI / 180;
+function dist(a, b) {   // mètres entre deux [lat, lon]
+  const dLat = rad(b[0] - a[0]), dLon = rad(b[1] - a[1]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
+// Relie les tronçons OpenStreetMap bout à bout en une seule ligne
+function relier(lignes) {
+  lignes = lignes.map(l => l.slice());
+  let ch = lignes.shift();
+  while (lignes.length) {
+    let best = null;
+    lignes.forEach((l, i) => {
+      for (const [bout, inv, debut] of [[l[0], false, false], [l[l.length - 1], true, false], [l[l.length - 1], false, true], [l[0], true, true]]) {
+        const d = dist(debut ? ch[0] : ch[ch.length - 1], bout);
+        if (!best || d < best.d) best = { d, i, inv, debut };
+      }
+    });
+    if (best.d > 300) break;   // morceau isolé : on s'arrête
+    let l = lignes.splice(best.i, 1)[0];
+    if (best.inv) l = l.reverse();
+    ch = best.debut ? l.concat(ch) : ch.concat(l);
+  }
+  return ch;
+}
+function cumul(ch) { const c = [0]; for (let i = 1; i < ch.length; i++) c.push(c[i - 1] + dist(ch[i - 1], ch[i])); return c; }
+function pointA(ch, c, m) {   // point situé à m mètres du début de la ligne
+  m = Math.max(0, Math.min(c[c.length - 1], m));
+  let i = 1; while (i < c.length - 1 && c[i] < m) i++;
+  const f = (m - c[i - 1]) / ((c[i] - c[i - 1]) || 1);
+  return [ch[i - 1][0] + (ch[i][0] - ch[i - 1][0]) * f, ch[i - 1][1] + (ch[i][1] - ch[i - 1][1]) * f];
+}
+function projeter(ch, c, p) {   // distance le long de la ligne du point le plus proche de p
+  let best = { d: Infinity, m: 0 };
+  ch.forEach((q, i) => { const d = dist(q, p); if (d < best.d) best = { d, m: c[i] }; });
+  return best;
+}
+
+async function lireTrace() {
+  const cle = "hel-trace-" + PARCOURS.voie + "-" + PARCOURS.kmDepart + "-" + PARCOURS.kmArrivee;
+  try { const t = JSON.parse(localStorage.getItem(cle)); if (t && t.length > 2) return t; } catch (e) {}
+  const q = `[out:json][timeout:25];(way["waterway"]["name"="${PARCOURS.voie}"](${PARCOURS.bbox});node["waterway"="milestone"](${PARCOURS.bbox}););out geom;`;
+  const r = await fetch("https://overpass-api.de/api/interpreter", { method: "POST", body: "data=" + encodeURIComponent(q) });
+  const j = await r.json();
+  const lignes = j.elements.filter(e => e.type === "way" && e.geometry).map(w => w.geometry.map(g => [g.lat, g.lon]));
+  if (!lignes.length) throw new Error("voie introuvable");
+  let ch = relier(lignes);
+  if (dist(ch[ch.length - 1], PARCOURS.origineKm) < dist(ch[0], PARCOURS.origineKm)) ch.reverse();   // km 0 au début
+  let c = cumul(ch);
+  // Bornes kilométriques d'OpenStreetMap, si elles existent, pour caler le kilométrage
+  const borne = km => j.elements.find(e => e.type === "node" && e.tags && parseFloat(String(e.tags.distance || "").replace(",", ".")) === km);
+  const bD = borne(PARCOURS.kmDepart), bA = borne(PARCOURS.kmArrivee);
+  let mD = PARCOURS.kmDepart * 1000, mA = PARCOURS.kmArrivee * 1000;
+  if (bD) mD = projeter(ch, c, [bD.lat, bD.lon]).m;
+  if (bA) mA = projeter(ch, c, [bA.lat, bA.lon]).m;
+  // Morceau du parcours, du départ vers l'arrivée, rééchantillonné tous les 25 m
+  const n = Math.ceil(Math.abs(mA - mD) / 25), t = [];
+  for (let k = 0; k <= n; k++) t.push(pointA(ch, c, mD + (mA - mD) * k / n).map(x => +x.toFixed(6)));
+  try { localStorage.setItem(cle, JSON.stringify(t)); } catch (e) {}
+  return t;
+}
+
+async function initCarte() {
+  if (!window.L) return;
+  try {
+    const t = await lireTrace();
+    const c = cumul(t), echelle = c[c.length - 1] / LONGUEUR;   // le tracé est ramené à 6000 m
+    trace = { t, c, echelle };
+    $("carte").hidden = false;
+    carte = L.map("carte", { scrollWheelZoom: false, attributionControl: true });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" }).addTo(carte);
+    L.polyline(t, { color: "#ff7f00", weight: 5, opacity: .9 }).addTo(carte);
+    [[0, "Départ"], [2000, "2000 m"], [4000, "4000 m"], [LONGUEUR, "Arrivée"]].forEach(([m, txt]) =>
+      L.marker(surCarte(m), { icon: L.divIcon({ className: "", html: `<span class="borne">${txt}</span>`, iconAnchor: [-6, 8] }), interactive: false }).addTo(carte));
+    carte.fitBounds(L.latLngBounds(t), { padding: [20, 20] });
+    $("carte-info").textContent = `Parcours : ${PARCOURS.voie}, du km ${PARCOURS.kmDepart} au km ${PARCOURS.kmArrivee} (tracé OpenStreetMap). Positions estimées comme ci-dessous.`;
+    dessiner();
+  } catch (e) {
+    $("carte").hidden = true;
+    $("carte-info").textContent = "Carte du parcours indisponible pour le moment.";
+  }
+}
+function surCarte(m) { return pointA(trace.t, trace.c, m * trace.echelle); }
+
+// Place les pions (numéro = place provisoire) ; appelé à chaque dessin
+function majCarte(liste) {
+  if (!carte || !trace) return;
+  const presents = new Set();
+  liste.forEach(({ b, m, rang, arrive }) => {
+    const d = b.e.dossard; presents.add(d);
+    const html = `<div class="pion${rang === 0 ? " n1" : ""}${arrive ? " arrive" : ""}${selection === d ? " choisi" : ""}">${rang + 1}</div>`;
+    let pion = pions.get(d);
+    if (!pion) {
+      pion = L.marker(surCarte(m), { icon: L.divIcon({ className: "", html, iconSize: [22, 22], iconAnchor: [11, 11] }) }).addTo(carte);
+      pion.bindTooltip(`N°${b.e.dossard} · ${b.e.club || b.e.equipage}${b.e.nage ? " · " + b.e.nage : ""}`);
+      pion.on("click", () => { selection = d; dessiner(); fiche(); });
+      pion._html = html; pions.set(d, pion);
+    } else {
+      pion.setLatLng(surCarte(m));
+      if (pion._html !== html) { pion.setIcon(L.divIcon({ className: "", html, iconSize: [22, 22], iconAnchor: [11, 11] })); pion._html = html; }
+    }
+    pion.setZIndexOffset(1000 - rang);
+  });
+  for (const [d, pion] of pions) if (!presents.has(d)) { pion.remove(); pions.delete(d); }
+}
+
 function dessiner() {
   if (mode === "direct") return dessinerDirect();
   const actifs = bateaux.filter(b => b.jalons.length > 1);
@@ -247,6 +380,7 @@ function dessiner() {
   // Classement à l'instant T : arrivés d'abord (au temps), puis les plus avancés
   pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.b.jalons[a.b.jalons.length - 1][0] - c.b.jalons[c.b.jalons.length - 1][0] : c.m - a.m));
   pos.forEach((p, k) => { p.rang = k; });
+  majCarte(pos.map(p => ({ b: p.b, m: p.m, rang: p.rang, arrive: p.arrive })));
   const lead = pos[0];
   pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.rang - c.rang : a.b.idx - c.b.idx));   // arrivés classés en haut, les autres gardent leur ligne
   const tete = lead ? lead.m : 0;
@@ -342,9 +476,10 @@ async function charger(garderT) {
   const p = new URLSearchParams(location.search).get("epreuve");
   choix = epreuves.some(x => x.id === p) ? p : epreuves[0].id;
   $("categorie").innerHTML = epreuves.map(ep => `<option value="${esc(ep.id)}"${ep.id === choix ? " selected" : ""}>${esc(ep.code)} · ${esc(ep.nom)}</option>`).join("");
-  $("categorie").onchange = () => { choix = $("categorie").value; vus = new Map(); premiereLecture = true; selection = null; pause(); history.replaceState(null, "", "?epreuve=" + choix); charger(false); };
+  $("categorie").onchange = () => { for (const p of pions.values()) p.remove(); pions.clear(); choix = $("categorie").value; vus = new Map(); premiereLecture = true; selection = null; pause(); history.replaceState(null, "", "?epreuve=" + choix); charger(false); };
   await charger(false);
   changerMode("direct");
+  initCarte();
 })();
 </script>
 </body>
