@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Head of Nantes 2027 · Course virtuelle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Course virtuelle : les bateaux d'une catégorie partent ensemble (comme en ligne)
+   et avancent d'après leurs temps de passage réels. Même habillage que la page des temps. */
+:root {
+  --nuit: #0b1a33; --nuit-2: #0f213f; --nuit-3: #16294b;
+  --or: #d4a53f; --rouge: #c0392b;
+  --creme: #f4f1e8; --brume: #9aa6b8; --trait: #22365a; --ok: #6cc59a;
+  --titre: "Anton", "Oswald", "Arial Narrow", Impact, sans-serif;
+  --mono: "Space Mono", ui-monospace, Menlo, Consolas, monospace;
+  --texte: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--nuit); color: var(--creme); font: 16px/1.45 var(--texte); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; }
+.top { background: var(--nuit-2); border-bottom: 1px solid var(--trait); position: relative; }
+.top .wrap { padding-block: 12px; display: flex; align-items: center; gap: 14px; }
+.logo { display: grid; place-items: center; width: 42px; height: 42px; border: 1.5px solid var(--or); color: var(--or); font: 15px var(--titre); flex: none; }
+.marque b { display: block; font: 18px/1.1 var(--titre); letter-spacing: .04em; text-transform: uppercase; }
+.marque span { font: 10.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--brume); }
+.retour { margin-left: auto; font: 700 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--or); text-decoration: none; border: 1px solid var(--or); padding: 8px 12px; white-space: nowrap; }
+.retour:hover { background: var(--or); color: var(--nuit); }
+
+h1 { font: clamp(38px, 8vw, 72px)/.95 var(--titre); text-transform: uppercase; color: var(--or); margin: 30px 0 6px; }
+.intro { color: var(--brume); max-width: 760px; margin: 0 0 18px; font-size: 15px; }
+
+.barre { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-top: 1px solid var(--trait); padding-top: 16px; }
+select { appearance: none; font: 20px/1.1 var(--titre); letter-spacing: .04em; text-transform: uppercase; color: var(--nuit); background: var(--or); border: 0; padding: 10px 14px 9px; max-width: 100%; cursor: pointer; }
+select option { font: 16px var(--texte); text-transform: none; color: var(--creme); background: var(--nuit-2); }
+.btn { font: 700 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--creme); background: transparent; border: 1px solid var(--trait); padding: 10px 14px 9px; cursor: pointer; }
+.btn:hover { border-color: var(--or); }
+.btn[aria-pressed="true"], .btn.principal { background: var(--or); border-color: var(--or); color: var(--nuit); }
+.vitesses { display: flex; gap: 4px; }
+
+.lecture { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+.lecture input[type=range] { flex: 1; accent-color: var(--or); }
+.chrono { font: clamp(32px, 6vw, 48px)/1 var(--titre); font-variant-numeric: tabular-nums; min-width: 5.2ch; text-align: right; }
+
+/* Le bassin : une ligne d'eau par équipage */
+.bassin { margin-top: 16px; border: 1px solid var(--trait); background: var(--nuit-2); }
+.regle, .ligne { display: grid; grid-template-columns: 34px minmax(90px, 190px) 1fr 72px; align-items: center; }
+.regle { border-bottom: 1px solid var(--or); font: 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brume); padding: 8px 0; }
+.regle .eau { position: relative; height: 14px; }
+.regle .eau span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.regle .eau span:first-child { transform: none; } .regle .eau span:last-child { transform: translateX(-100%); color: var(--or); }
+.ligne { border-bottom: 1px solid var(--trait); min-height: 38px; cursor: pointer; }
+.ligne:last-child { border-bottom: 0; }
+.ligne:hover, .ligne.choisi { background: var(--nuit-3); }
+.ligne .rg { font: 20px/1 var(--titre); text-align: center; }
+.ligne .nom { font: 700 12px var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+.ligne .nom small { display: block; font: 400 12px var(--texte); color: var(--brume); overflow: hidden; text-overflow: ellipsis; }
+.eau { position: relative; height: 38px; margin-inline: 10px; }
+.eau::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed var(--trait); }
+.repere { position: absolute; top: 4px; bottom: 4px; border-left: 1px solid var(--trait); }
+.repere.fin { border-left: 2px solid var(--or); }
+.bateau { position: absolute; top: 50%; width: 30px; height: 12px; margin-left: -30px; transform: translateY(-50%); background: var(--creme); clip-path: polygon(0 50%, 18% 0, 100% 35%, 100% 65%, 18% 100%); transition: none; }
+.bateau.tete { background: var(--or); }
+.bateau.arrive { background: var(--ok); }
+.bateau.attente { opacity: .35; }
+.ligne .ecart { font: 700 12px var(--mono); text-align: right; padding-right: 10px; font-variant-numeric: tabular-nums; color: var(--brume); }
+.ligne .ecart.t1 { color: var(--or); }
+@media (max-width: 600px) { .regle, .ligne { grid-template-columns: 26px 84px 1fr 56px; } .eau { margin-inline: 6px; } .bateau { width: 22px; height: 10px; margin-left: -22px; } }
+
+.fiche { margin-top: 14px; border: 1px solid var(--or); background: var(--nuit-2); padding: 12px 14px; }
+.fiche b { font: 22px/1.1 var(--titre); text-transform: uppercase; letter-spacing: .03em; }
+.fiche table { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.fiche td, .fiche th { padding: 4px 14px 4px 0; text-align: left; }
+.fiche th { font: 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--brume); font-weight: 400; }
+#m-direct[aria-pressed="true"] { background: var(--rouge); border-color: var(--rouge); color: #fff; }
+[hidden] { display: none !important; }
+.bateau.estime { opacity: .85; }
+/* Place provisoire posée sur chaque bateau (pastille à l'arrière de la coque) */
+.num-bateau { position: absolute; top: 50%; transform: translate(-100%, -50%); margin-left: -32px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; background: var(--creme); color: var(--nuit); font: 700 11px/20px var(--mono); text-align: center; pointer-events: none; }
+.num-bateau.n1 { background: var(--or); }
+@media (max-width: 600px) { .num-bateau { margin-left: -24px; min-width: 18px; height: 18px; line-height: 18px; font-size: 10px; } }
+.demo { border: 1px dashed var(--or); color: var(--creme); padding: 10px 14px; font-size: 14px; margin-bottom: 18px; }
+.demo b { color: var(--or); font: 700 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; margin-right: 8px; }
+.note { font-size: 13px; color: var(--brume); margin: 14px 0 40px; }
+.message { padding: 18px; color: var(--brume); }
+/* Carte du parcours : plan de la Head of Nantes (nord à droite), dessiné sans serveur extérieur */
+#carte { margin-top: 16px; border: 1px solid var(--trait); background: #0f213f; overflow-x: auto; }
+#carte svg { display: block; width: 100%; min-width: 720px; height: auto; }
+/* Eau très visible sur fond bleu nuit : la rivière est élargie par un contour de même couleur */
+#carte .eau { fill: #7fb8dc; stroke: #7fb8dc; stroke-width: 36; stroke-linejoin: round; }
+#carte .pont { fill: none; stroke: #000; } #carte .pont-halo { fill: none; stroke: #e9e6dc; }
+#carte .inter circle { fill: #f07d1a; stroke: #fff; stroke-width: 6; } #carte .inter text { fill: #fff; font: 700 40px var(--mono); paint-order: stroke; stroke: #0f213f; stroke-width: 10px; }
+#carte .parc rect { fill: #1f8a5b; } #carte .parc text { fill: #fff; font: 700 40px var(--mono); } #carte .parc path { stroke: #1f8a5b; stroke-width: 8; fill: none; } #carte .parc circle { fill: #1f8a5b; stroke: #fff; stroke-width: 6; }
+#carte .pion .lien { stroke: #fff; stroke-width: 6; } #carte .pion .point { fill: #fff; stroke: #0b1a33; stroke-width: 5; }
+#carte .trace { fill: none; stroke: #0b1a33; stroke-width: 7; stroke-dasharray: 24 22; stroke-linejoin: round; stroke-linecap: round; opacity: .45; }
+#carte .borne rect { fill: #d4a53f; } #carte .borne text { fill: #0b1a33; font: 700 44px var(--mono); }
+#carte .pion { cursor: pointer; } #carte .pion .bulle circle { fill: #fff; stroke: #0b1a33; stroke-width: 9; }
+#carte .pion text { fill: #0b1a33; font: 700 58px var(--mono); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+#carte .pion.n1 .bulle circle, #carte .pion.n1 .point { fill: #d4a53f; } #carte .pion.arrive .bulle circle, #carte .pion.arrive .point { fill: #6cc59a; } #carte .pion.choisi .bulle circle { stroke: #c0392b; stroke-width: 16; }
+.carte-info { font-size: 13px; color: var(--brume); margin-top: 6px; }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="logo" aria-hidden="true">HoN</div>
+  <div class="marque"><b>Head of Nantes</b><span>Régate internationale · 6&amp;7 mars 2027</span></div>
+  <a class="retour" href="/hon/">← Temps</a>
+</div></header>
+
+<main class="wrap">
+  <h1>Course virtuelle</h1>
+  <div class="demo" id="demo" hidden><b>Démonstration</b>Données simulées. Une fois sur votre site, la page affiche les vrais temps Time-Team.</div>
+  <p class="intro"><b>En direct</b> : chaque bateau avance à sa vitesse moyenne depuis le départ, puis se recale et les places se réajustent dès qu'un nouveau temps de passage arrive. <b>Rejouer</b> : tous les bateaux de la catégorie partent ensemble pour comparer leurs courses. Cliquez sur un bateau pour voir ses temps.</p>
+
+  <div class="barre">
+    <select id="categorie" aria-label="Catégorie"></select>
+    <div class="vitesses" role="group" aria-label="Mode">
+      <button class="btn" id="m-direct" aria-pressed="true">● En direct</button><button class="btn" id="m-rejouer">Rejouer</button>
+    </div>
+  </div>
+  <div class="barre" id="commandes" hidden>
+    <button class="btn principal" id="jouer">▶ Lancer</button>
+    <button class="btn" id="zero">↺ Départ</button>
+    <div class="vitesses" role="group" aria-label="Vitesse">
+      <button class="btn" data-v="10">×10</button><button class="btn" data-v="30" aria-pressed="true">×30</button><button class="btn" data-v="60">×60</button>
+    </div>
+  </div>
+  <div class="lecture" id="lecture" hidden>
+    <input type="range" id="curseur" min="0" max="1000" value="0" step="1" aria-label="Temps de course">
+    <div class="chrono" id="chrono">0:00</div>
+  </div>
+
+  <div id="carte" hidden></div>
+  <div class="carte-info" id="carte-info"></div>
+  <div class="bassin" id="bassin"><div class="message">Chargement…</div></div>
+  <div id="fiche"></div>
+  <p class="note" id="note"></p>
+</main>
+
+<script>
+const CONNECTEUR = "/api/hon";
+const LONGUEUR = 8000;   // parcours de la Head of Nantes (m)
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const secondes = txt => { const m = /^(?:(\d+):)?(\d+):(\d+(?:[.,]\d+)?)$/.exec(String(txt ?? "").trim()); return m ? (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + parseFloat(m[3].replace(",", ".")) : null; };
+const mmss = s => { s = Math.max(0, s); const m = Math.floor(s / 60), r = Math.floor(s % 60); return m + ":" + String(r).padStart(2, "0"); };
+const fin1 = s => { const m = Math.floor(s / 60), r = (s - m * 60).toFixed(1); return m ? m + ":" + r.padStart(4, "0") : r; };
+let demo = false;   // true : connecteur.php absent, données simulées
+const lireConnecteur = async q => { const r = await fetch(CONNECTEUR + "?" + q, { cache: "no-store" }); if (!r.ok) throw new Error(r.status); return r.json(); };
+const lire = q => demo ? Promise.resolve(q === "liste" ? DEMO.liste() : DEMO.epreuve(decodeURIComponent(q.slice(6)))) : lireConnecteur(q);
+const distancePoint = label => label === "Arrivée" ? LONGUEUR : parseInt(label) || null;
+
+let mode = "direct", horloge = null;
+// Passages vus apparaître pendant que la page est ouverte : "dossard|distance" -> heure (ms) où on l'a vu
+let vus = new Map(), premiereLecture = true;
+const LATENCE = 12;   // secondes entre le passage réel et son arrivée sur la page (Time-Team + relecture)
+let epreuves = [], choix = null, donnees = null, bateaux = [], T = 0, Tmax = 1, vitesse = 30, enCours = false, dernierCadre = 0, selection = null, minuterie = null;
+
+// Pour chaque équipage : liste de [temps (s), distance (m)] à partir du départ.
+function preparer(d) {
+  const points = (d.points || []).map(p => ({ id: p.id, label: p.label, m: distancePoint(p.label) })).filter(p => p.m);
+  bateaux = d.equipages.map(e => {
+    const jalons = [[0, 0]];
+    for (const p of points) {
+      const t = e.temps && e.temps[p.id], s = t ? secondes(t.temps) : null;
+      if (s != null && s > jalons[jalons.length - 1][0]) jalons.push([s, p.m]);
+    }
+    const abandon = !["arrive", "course", "attente"].includes(e.etat);
+    return { e, jalons, fini: !abandon && jalons[jalons.length - 1][1] >= LONGUEUR, abandon };
+  });
+  // Heure de départ de l'épreuve (heure de Nantes, UTC+1 début mars) et ordre de départ
+  const dep = d.departMs ? d.departMs : d.depart ? Date.parse(String(d.depart).replace(" ", "T") + "+01:00") : NaN;
+  bateaux.slice().sort((a, c) => (a.e.ordre ?? +a.e.dossard) - (c.e.ordre ?? +c.e.dossard)).forEach((b, i) => { b.idx = i; });
+  const maintenant = Date.now();
+  bateaux.forEach(b => b.jalons.slice(1).forEach(([t, m]) => {
+    const cle = b.e.dossard + "|" + m;
+    if (!vus.has(cle)) vus.set(cle, premiereLecture ? null : maintenant);   // null : déjà là à l'ouverture
+  }));
+  premiereLecture = false;
+  donnees = { points, dep };
+  const avecTemps = bateaux.filter(b => b.jalons.length > 1);
+  Tmax = Math.max(60, ...avecTemps.map(b => b.jalons[b.jalons.length - 1][0])) + 5;
+}
+
+// Points de passage intermédiaires (en mètres), lus dans les données de l'épreuve
+function intermediaires() { return donnees ? donnees.points.map(p => p.m).filter(m => m > 0 && m < LONGUEUR) : []; }
+function graduations() {
+  return `<span style="left:0">Départ</span>` + intermediaires().map(m => `<span style="left:${m / LONGUEUR * 100}%">${m} m</span>`).join("") + `<span style="left:100%">Arrivée</span>`;
+}
+
+function position(b, t) {
+  const j = b.jalons;
+  for (let i = 1; i < j.length; i++) {
+    if (t <= j[i][0]) { const [t0, d0] = j[i - 1], [t1, d1] = j[i]; return d0 + (d1 - d0) * (t - t0) / (t1 - t0); }
+  }
+  return j[j.length - 1][1];   // plus de temps connu : le bateau reste à son dernier passage
+}
+
+// ---- En direct : chaque bateau avance à sa vitesse moyenne depuis le départ ----
+function departBateau(b) {
+  // 1) un passage vu en direct donne l'heure de départ : heure vue - temps de passage - latence
+  for (let k = b.jalons.length - 1; k > 0; k--) {
+    const vu = vus.get(b.e.dossard + "|" + b.jalons[k][1]);
+    if (vu) return vu - (b.jalons[k][0] + LATENCE) * 1000;
+  }
+  // 2) sinon : départ de l'épreuve + rang de départ × intervalle (déduit des passages vus, 15 s par défaut)
+  return donnees.dep + b.idx * intervalle() * 1000;
+}
+function intervalle() {
+  const mesures = [];
+  bateaux.forEach(b => { if (b.idx > 0) for (let k = b.jalons.length - 1; k > 0; k--) {
+    const vu = vus.get(b.e.dossard + "|" + b.jalons[k][1]);
+    if (vu) { mesures.push((vu - (b.jalons[k][0] + LATENCE) * 1000 - donnees.dep) / 1000 / b.idx); break; }
+  } });
+  if (!mesures.length || isNaN(donnees.dep)) return 15;
+  mesures.sort((a, c) => a - c);
+  return Math.min(120, Math.max(5, mesures[Math.floor(mesures.length / 2)]));
+}
+function vitesseTypique() {   // vitesse médiane au premier tronçon, pour les bateaux sans passage
+  const v = bateaux.filter(b => b.jalons.length > 1).map(b => b.jalons[1][1] / b.jalons[1][0]).sort((a, c) => a - c);
+  return v.length ? v[Math.floor(v.length / 2)] : LONGUEUR / 1500;
+}
+function etatDirect(b, maintenant, vType) {
+  const j = b.jalons, der = j[j.length - 1];
+  if (b.fini) return { m: LONGUEUR, etat: "arrive", fin: der[0] };
+  if (b.abandon) return { m: der[1], etat: "abandon", fin: Infinity };
+  const depart = departBateau(b);
+  const t = (maintenant - depart) / 1000;
+  const vit = j.length > 1 ? der[1] / der[0] : vType;   // vitesse moyenne depuis le départ, recalculée à chaque passage
+  const fin = der[0] + (LONGUEUR - der[1]) / vit;   // temps final projeté à cette vitesse
+  if (isNaN(t) || t < 0) return { m: der[1], etat: der[1] ? "estime" : "depart", fin, dans: isNaN(t) ? null : -t };
+  const suivant = [...intermediaires(), LONGUEUR].find(x => x > der[1]) ?? LONGUEUR;
+  const m = Math.max(der[1], Math.min(der[1] + vit * (t - der[0]), suivant - 20));
+  return { m, etat: "estime", fin };
+}
+function dessinerDirect() {
+  if (!bateaux.length) { $("bassin").innerHTML = `<div class="message">Pas encore d'équipage dans cette catégorie.</div>`; return; }
+  const maintenant = Date.now(), vType = vitesseTypique();
+  const pos = bateaux.map(b => ({ b, ...etatDirect(b, maintenant, vType) }));
+  // Ordre : arrivés au temps final, puis bateaux sur l'eau au temps final projeté, puis ceux au départ
+  const groupe = p => p.etat === "arrive" ? 0 : p.etat === "abandon" ? 3 : p.etat === "depart" ? 2 : 1;
+  pos.sort((a, c) => groupe(a) - groupe(c) || (groupe(a) === 2 ? a.b.idx - c.b.idx : a.fin - c.fin));
+  pos.forEach((p, k) => { p.rang = k; });
+  majCarte(pos.filter(p => p.etat === "arrive" || p.etat === "estime").map(p => ({ b: p.b, m: p.m, rang: p.rang, arrive: p.etat === "arrive" })));
+  const lead = pos[0];
+  // Arrivés en haut dans l'ordre du classement ; les autres gardent leur ligne (ordre de départ)
+  pos.sort((a, c) => ((c.etat === "arrive") - (a.etat === "arrive")) || (a.etat === "arrive" ? a.rang - c.rang : a.b.idx - c.b.idx));
+  const meilleur = Math.min(...pos.filter(p => p.etat === "arrive").map(p => p.fin));
+  const reperes = intermediaires().map(m => `<i class="repere" style="left:${m / LONGUEUR * 100}%"></i>`).join("") + `<i class="repere fin" style="left:100%"></i>`;
+  $("bassin").innerHTML = `<div class="regle"><span></span><span>Équipage</span><div class="eau" style="height:14px">${graduations()}</div><span style="text-align:right;padding-right:10px">Où ?</span></div>`
+    + pos.map((p, _k, _t, i = p.rang) => {
+      const e = p.b.e;
+      const info = p.etat === "arrive" ? (p.fin - meilleur < 0.05 ? fin1(p.fin) : "+" + fin1(p.fin - meilleur))
+        : p.etat === "abandon" ? (e.etat || "") : p.etat === "depart" ? "au départ" : "≈" + (Math.round(p.m / 10) * 10) + " m";
+      const cls = { arrive: "arrive", estime: "estime", depart: "attente", abandon: "attente" }[p.etat];
+      const rg = p.etat === "arrive" ? i + 1 : p.etat === "estime" ? "≈" + (i + 1) : "";
+      return `<div class="ligne${selection === e.dossard ? " choisi" : ""}" data-d="${esc(e.dossard)}">
+        <span class="rg"${p.etat === "estime" ? ' style="font-size:15px;color:var(--brume)"' : ""}>${rg}</span>
+        <span class="nom">N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}<small>${esc(e.nage || e.equipage)}</small></span>
+        <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i>${p.etat === "arrive" || p.etat === "estime" ? `<b class="num-bateau${i === 0 ? " n1" : ""}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%">${i + 1}</b>` : ""}</div>
+        <span class="ecart${p.etat === "arrive" && i === 0 ? " t1" : ""}">${esc(info)}</span></div>`;
+    }).join("");
+  $("chrono").textContent = "";
+}
+
+
+// ================= Carte du parcours =================
+// Plan fourni par l'organisation (berges et ponts de l'Erdre, tracé de 8 km), en mètres,
+// tourné pour avoir le nord à droite. Les bateaux sont placés le long du tracé.
+const PLAN = {"trace":[[-22,94],[293,347],[458,463],[627,576],[736,606],[942,649],[1192,700],[1409,706],[1794,597],[2327,312],[2477,282],[2564,244],[2604,190],[2553,135],[2479,144],[2337,177],[2098,245],[1838,421],[1666,514],[1411,575],[1203,602],[831,555],[689,503],[585,457],[382,337],[288,255],[182,162],[68,71],[-19,-1],[-150,-124],[-194,-157],[-245,-180],[-357,-206],[-588,-226],[-766,-225],[-1084,-203],[-1207,-208],[-1319,-228],[-1489,-280],[-1646,-326],[-1846,-361],[-1946,-380],[-2046,-398]],"eau":"M12974,2942 L12988,2811 L12911,2811 L12856,2811 L12770,2802 L12677,2787 L12615,2780 L12519,2760 L12436,2757 L12277,2734 L12126,2712 L12093,2696 L11997,2686 L11990,2686 L11970,2690 L11944,2708 L11873,2756 L11854,2759 L11836,2771 L11776,2782 L11577,2816 L11592,2919 L11809,2883 L11893,2850 L11980,2795 L12062,2795 L12239,2839 L12366,2842 L12395,2843 L12413,2844 L12434,2844 L12534,2891 L12611,2920 L12650,2936 L12704,2963 L12759,2966 L12825,2971 L12866,2962 L12929,2955 L12974,2942ZM8581,1624 L8646,1488 L8610,1468 L8573,1443 L8549,1407 L8532,1392 L8514,1394 L8494,1379 L8444,1351 L8362,1309 L8306,1285 L8258,1266 L8190,1244 L8113,1232 L8107,1232 L8039,1237 L8032,1225 L8029,1218 L7955,1199 L7896,1163 L7783,1096 L7772,1091 L7760,1074 L7734,1034 L7712,997 L7690,919 L7682,896 L7670,866 L7682,862 L7681,856 L7666,860 L7664,852 L7661,838 L7658,816 L7658,796 L7660,796 L7661,792 L7657,792 L7657,783 L7657,761 L7658,756 L7659,755 L7660,755 L7660,752 L7660,749 L7661,748 L7660,734 L7658,718 L7656,701 L7651,699 L7648,694 L7623,701 L7620,704 L7525,732 L7518,734 L7513,734 L7508,734 L7505,734 L7503,731 L7499,717 L7499,712 L7501,710 L7511,704 L7593,686 L7636,677 L7644,673 L7648,666 L7644,648 L7640,634 L7637,625 L7635,616 L7625,581 L7620,576 L7618,576 L7618,578 L7616,578 L7611,579 L7607,578 L7605,569 L7605,567 L7610,561 L7607,543 L7606,540 L7604,538 L7593,541 L7591,541 L7589,538 L7588,535 L7589,531 L7593,522 L7590,512 L7586,511 L7572,479 L7589,468 L7585,464 L7581,471 L7577,469 L7566,461 L7563,449 L7562,443 L7558,442 L7552,443 L7540,439 L7547,435 L7547,431 L7562,404 L7558,400 L7525,448 L7497,464 L7443,483 L7431,485 L7384,494 L7341,502 L7286,509 L7256,528 L7219,549 L7192,583 L7156,616 L7139,631 L7093,665 L7072,664 L7032,623 L7001,608 L6969,594 L6945,606 L6922,596 L6899,575 L6855,553 L6803,540 L6765,519 L6722,500 L6690,461 L6662,419 L6635,386 L6632,347 L6620,304 L6611,266 L6577,231 L6571,209 L6560,196 L6565,182 L6564,179 L6560,179 L6552,191 L6546,191 L6545,189 L6543,156 L6541,146 L6539,137 L6536,109 L6528,108 L6534,146 L6524,195 L6510,165 L6453,165 L6414,156 L6346,176 L6301,193 L6281,220 L6239,201 L6155,245 L6093,286 L6040,328 L6006,347 L5960,402 L5929,442 L5877,487 L5827,494 L5782,525 L5749,550 L5712,596 L5651,621 L5600,627 L5550,620 L5497,613 L5431,612 L5381,604 L5330,593 L5295,581 L5249,561 L5179,534 L5147,516 L5123,488 L5098,466 L5069,454 L5028,452 L4997,454 L4936,429 L4895,401 L4879,390 L4860,376 L4828,363 L4799,351 L4770,346 L4768,334 L4716,317 L4693,295 L4676,276 L4660,256 L4639,232 L4636,155 L4674,110 L4767,60 L4784,56 L4796,44 L4810,14 L4824,-18 L4859,-96 L4961,-184 L4970,-195 L4998,-231 L5006,-253 L5014,-336 L5020,-400 L5006,-441 L4985,-252 L4948,-202 L4937,-189 L4881,-145 L4859,-121 L4839,-96 L4819,-59 L4794,-18 L4774,10 L4757,24 L4728,40 L4649,75 L4611,90 L4609,72 L4562,61 L4472,71 L4470,86 L4454,91 L4407,102 L4363,110 L4339,132 L4302,154 L4288,148 L4236,145 L4214,137 L4208,135 L4205,133 L4179,118 L4170,108 L4174,92 L4171,88 L4166,94 L4085,82 L4037,72 L4003,67 L3923,54 L3889,49 L3879,36 L3843,58 L3796,76 L3778,82 L3724,101 L3683,138 L3647,158 L3605,208 L3507,230 L3424,251 L3356,254 L3319,253 L3276,241 L3248,220 L3235,201 L3224,182 L3239,86 L3234,86 L3216,153 L3188,170 L3131,155 L3123,155 L3097,144 L3089,116 L3065,111 L3041,109 L2947,68 L2899,31 L2868,-4 L2865,-30 L2848,-68 L2820,-94 L2767,-116 L2721,-123 L2665,-155 L2659,-214 L2657,-214 L2655,-169 L2641,-143 L2628,-136 L2627,-136 L2626,-136 L2626,-135 L2624,-137 L2626,-143 L2620,-145 L2618,-139 L2614,-138 L2606,-141 L2602,-147 L2599,-150 L2592,-150 L2588,-146 L2573,-149 L2553,-144 L2538,-147 L2525,-131 L2496,-119 L2494,-115 L2483,-109 L2428,-76 L2417,-69 L2411,-71 L2388,-58 L2379,-50 L2370,-41 L2343,-4 L2280,40 L2212,77 L2149,110 L2082,141 L2078,143 L2059,152 L2047,188 L2022,227 L1984,269 L1971,280 L1946,302 L1901,324 L1859,348 L1817,374 L1762,428 L1719,459 L1668,474 L1622,486 L1578,497 L1563,498 L1557,498 L1556,498 L1555,499 L1549,499 L1485,503 L1397,505 L1376,506 L1372,508 L1365,513 L1353,523 L1345,524 L1333,527 L1324,514 L1315,515 L1310,528 L1296,532 L1260,538 L1242,541 L1214,552 L1212,559 L1188,564 L1306,782 L1333,778 L1372,779 L1388,773 L1411,768 L1440,759 L1462,756 L1477,759 L1493,746 L1511,733 L1536,729 L1567,709 L1572,707 L1577,708 L1590,715 L1598,716 L1606,712 L1613,710 L1632,702 L1650,699 L1671,696 L1684,693 L1702,685 L1754,662 L1798,632 L1852,645 L1870,634 L1888,619 L1921,601 L1935,600 L1950,612 L1965,595 L1972,587 L1978,575 L1985,566 L1995,557 L2030,546 L2035,546 L2055,542 L2083,528 L2159,495 L2196,463 L2225,425 L2262,379 L2277,361 L2316,339 L2362,325 L2377,329 L2429,341 L2482,330 L2502,336 L2524,331 L2572,364 L2590,375 L2603,384 L2628,409 L2654,460 L2656,463 L2661,468 L2665,485 L2666,493 L2671,502 L2686,511 L2726,604 L2741,606 L2756,598 L2769,592 L2782,586 L2796,579 L2806,561 L2820,509 L2832,460 L2829,432 L2834,410 L2855,379 L2907,348 L2954,319 L2982,309 L3062,316 L3120,327 L3140,338 L3176,366 L3220,391 L3328,444 L3355,456 L3366,459 L3405,480 L3423,495 L3434,504 L3541,642 L3543,644 L3547,649 L3545,658 L3544,662 L3541,685 L3545,701 L3549,708 L3555,710 L3563,712 L3576,736 L3584,752 L3591,760 L3599,768 L3606,776 L3628,788 L3654,802 L3683,807 L3712,808 L3717,806 L3721,803 L3726,801 L3727,789 L3771,749 L3786,749 L3792,741 L3798,737 L3804,729 L3812,707 L3818,696 L3824,663 L3833,603 L3843,563 L3868,550 L3886,540 L3943,555 L3993,582 L4049,605 L4110,622 L4150,634 L4173,651 L4194,668 L4208,681 L4221,691 L4247,704 L4256,708 L4291,701 L4316,730 L4337,750 L4366,750 L4387,766 L4379,737 L4388,717 L4378,662 L4352,620 L4327,572 L4311,527 L4311,491 L4324,462 L4360,440 L4396,420 L4429,412 L4464,405 L4502,408 L4538,415 L4573,430 L4599,452 L4630,472 L4656,497 L4695,526 L4727,555 L4756,592 L4775,616 L4788,630 L4815,671 L4833,674 L4856,677 L4893,701 L4935,721 L4950,758 L4971,791 L5044,821 L5128,856 L5232,853 L5270,844 L5316,854 L5373,843 L5456,819 L5512,797 L5576,806 L5629,822 L5668,841 L5695,844 L5699,842 L5721,835 L5765,841 L5782,829 L5822,828 L5859,822 L5888,808 L5921,813 L5949,824 L5970,840 L5996,817 L6025,788 L6055,766 L6092,760 L6128,762 L6157,776 L6162,776 L6187,785 L6202,794 L6234,778 L6261,770 L6288,780 L6304,786 L6331,788 L6333,783 L6326,766 L6328,746 L6338,749 L6365,744 L6362,736 L6378,717 L6400,708 L6423,704 L6445,702 L6467,702 L6482,705 L6491,695 L6509,682 L6532,669 L6558,672 L6586,676 L6614,689 L6628,693 L6632,697 L6638,700 L6640,708 L6649,727 L6657,737 L6669,749 L6691,754 L6698,761 L6703,775 L6716,790 L6737,798 L6749,801 L6764,812 L6786,835 L6814,860 L6843,870 L6867,879 L6886,887 L6904,888 L6918,886 L6956,869 L6972,864 L6998,845 L7021,832 L7050,831 L7056,831 L7066,831 L7076,836 L7094,827 L7118,819 L7154,813 L7155,811 L7171,808 L7174,810 L7201,804 L7234,794 L7240,790 L7254,782 L7308,759 L7339,750 L7355,746 L7376,720 L7416,714 L7421,714 L7475,709 L7480,717 L7496,758 L7506,817 L7498,888 L7492,937 L7506,1028 L7564,1170 L7603,1214 L7659,1246 L7700,1265 L7729,1298 L7749,1331 L7786,1348 L7802,1339 L7830,1342 L7879,1359 L7976,1353 L8125,1380 L8219,1392 L8342,1432 L8384,1471 L8432,1501 L8476,1568 L8489,1615 L8581,1624ZM14637,2983 L14620,3023 L14678,3051 L14680,3056 L14703,3068 L14729,3080 L14747,3093 L14765,3106 L14786,3116 L14812,3135 L14834,3148 L14854,3153 L14880,3159 L14900,3168 L14916,3178 L14931,3187 L14948,3199 L14959,3210 L14970,3216 L14982,3224 L14998,3235 L15017,3244 L15031,3253 L15038,3259 L15047,3260 L15066,3266 L15090,3275 L15106,3250 L15083,3239 L15066,3230 L15033,3213 L14983,3177 L14948,3156 L14928,3143 L14891,3126 L14867,3118 L14841,3106 L14818,3095 L14798,3080 L14781,3076 L14760,3064 L14742,3052 L14727,3033 L14719,3025 L14700,3016 L14691,3012 L14679,3004 L14671,2999 L14663,2996 L14637,2983ZM-4620,-1387 L-4655,-1360 L-4683,-1336 L-4658,-1310 L-4657,-1311 L-4653,-1307 L-4644,-1298 L-4595,-1251 L-4592,-1250 L-4576,-1236 L-4567,-1230 L-4558,-1226 L-4548,-1213 L-4540,-1210 L-4521,-1196 L-4501,-1184 L-4486,-1168 L-4483,-1167 L-4467,-1162 L-4455,-1159 L-4456,-1157 L-4453,-1155 L-4448,-1149 L-4442,-1145 L-4438,-1140 L-4413,-1100 L-4410,-1105 L-4392,-1083 L-4383,-1070 L-4356,-1044 L-4353,-1041 L-4349,-1029 L-4350,-1029 L-4321,-997 L-4304,-984 L-4220,-952 L-4178,-949 L-4133,-929 L-4034,-949 L-4020,-968 L-3971,-978 L-3962,-972 L-3953,-969 L-3939,-973 L-3914,-974 L-3880,-978 L-3876,-988 L-3849,-1011 L-3821,-1014 L-3791,-1019 L-3761,-1018 L-3753,-1022 L-3738,-1019 L-3728,-1026 L-3712,-1037 L-3699,-1046 L-3694,-1052 L-3669,-1079 L-3656,-1087 L-3637,-1090 L-3626,-1091 L-3619,-1092 L-3608,-1092 L-3561,-1062 L-3549,-1054 L-3548,-1053 L-3534,-1043 L-3508,-1027 L-3454,-989 L-3450,-978 L-3438,-973 L-3423,-972 L-3409,-975 L-3352,-946 L-3347,-939 L-3337,-931 L-3335,-917 L-3338,-907 L-3336,-901 L-3332,-900 L-3328,-907 L-3329,-914 L-3321,-918 L-3307,-907 L-3291,-898 L-3277,-893 L-3266,-878 L-3259,-875 L-3236,-871 L-3155,-848 L-3098,-827 L-3090,-824 L-3088,-824 L-3088,-821 L-3076,-816 L-3080,-800 L-3089,-768 L-3078,-766 L-3064,-768 L-3048,-775 L-3042,-773 L-3043,-762 L-3029,-757 L-3017,-750 L-3012,-734 L-3007,-725 L-3004,-733 L-3008,-748 L-3013,-764 L-3021,-769 L-3026,-772 L-3032,-774 L-3031,-778 L-3028,-779 L-3021,-776 L-3013,-776 L-2980,-772 L-2959,-770 L-2953,-766 L-2943,-768 L-2939,-772 L-2899,-780 L-2870,-766 L-2820,-755 L-2786,-718 L-2726,-692 L-2708,-710 L-2692,-710 L-2688,-708 L-2665,-702 L-2653,-698 L-2649,-691 L-2625,-689 L-2595,-675 L-2575,-654 L-2556,-634 L-2546,-618 L-2538,-601 L-2538,-592 L-2546,-584 L-2552,-570 L-2553,-558 L-2540,-549 L-2526,-540 L-2514,-536 L-2504,-531 L-2471,-511 L-2454,-485 L-2432,-461 L-2424,-451 L-2409,-441 L-2404,-433 L-2393,-420 L-2379,-409 L-2348,-389 L-2324,-380 L-2320,-371 L-2320,-362 L-2316,-359 L-2310,-373 L-2306,-375 L-2301,-365 L-2304,-356 L-2313,-346 L-2322,-338 L-2321,-332 L-2323,-326 L-2318,-327 L-2306,-334 L-2294,-344 L-2283,-358 L-2274,-363 L-2263,-368 L-2250,-373 L-2238,-366 L-2228,-356 L-2214,-343 L-2214,-334 L-2208,-324 L-2192,-322 L-2180,-320 L-2167,-314 L-2156,-301 L-2151,-298 L-2143,-299 L-2126,-304 L-2115,-316 L-2079,-320 L-2066,-311 L-2047,-296 L-2037,-289 L-2022,-285 L-2005,-280 L-1995,-279 L-1989,-279 L-1973,-280 L-1970,-279 L-1966,-277 L-1965,-276 L-1963,-274 L-1960,-271 L-1956,-269 L-1952,-268 L-1949,-267 L-1945,-264 L-1941,-263 L-1937,-262 L-1934,-260 L-1928,-256 L-1922,-252 L-1907,-245 L-1885,-240 L-1863,-237 L-1845,-237 L-1813,-242 L-1799,-245 L-1718,-252 L-1704,-253 L-1694,-256 L-1678,-262 L-1648,-263 L-1604,-267 L-1586,-255 L-1570,-238 L-1558,-230 L-1557,-227 L-1558,-226 L-1554,-220 L-1549,-212 L-1536,-183 L-1524,-180 L-1512,-177 L-1494,-174 L-1476,-172 L-1461,-170 L-1442,-166 L-1435,-164 L-1430,-162 L-1427,-161 L-1424,-159 L-1419,-156 L-1410,-146 L-1400,-136 L-1396,-130 L-1389,-107 L-1385,-94 L-1380,-85 L-1376,-77 L-1365,-64 L-1362,-59 L-1360,-54 L-1358,-50 L-1355,-46 L-1352,-43 L-1348,-40 L-1347,-39 L-1346,-38 L-1345,-36 L-1346,-35 L-1348,-34 L-1349,-34 L-1350,-34 L-1351,-35 L-1353,-34 L-1354,-33 L-1356,-33 L-1362,-35 L-1365,-36 L-1366,-39 L-1371,-44 L-1376,-47 L-1379,-48 L-1381,-47 L-1381,-45 L-1381,-42 L-1385,-39 L-1387,-39 L-1388,-40 L-1390,-44 L-1394,-54 L-1401,-69 L-1407,-82 L-1415,-88 L-1422,-95 L-1431,-95 L-1436,-94 L-1439,-91 L-1439,-85 L-1436,-78 L-1434,-72 L-1425,-68 L-1416,-62 L-1407,-57 L-1396,-42 L-1387,-27 L-1377,-20 L-1370,-13 L-1366,-6 L-1362,0 L-1352,12 L-1340,22 L-1332,27 L-1323,31 L-1305,37 L-1296,38 L-1286,43 L-1262,49 L-1219,60 L-1211,62 L-1202,64 L-1160,61 L-1090,32 L-1089,31 L-1083,29 L-1046,32 L-992,42 L-989,43 L-985,42 L-982,34 L-981,33 L-959,1 L-932,-52 L-900,-77 L-879,-93 L-814,-108 L-752,-104 L-660,-55 L-616,-51 L-596,-50 L-580,-48 L-541,-45 L-522,-54 L-497,-66 L-481,-70 L-470,-84 L-444,-89 L-432,-88 L-419,-92 L-388,-88 L-294,-58 L-285,-53 L-233,-24 L-223,-1 L-225,33 L-242,40 L-251,54 L-245,61 L-224,54 L-208,46 L-182,35 L-168,41 L-106,97 L-95,104 L-85,107 L-79,111 L-76,117 L-71,124 L-68,128 L-64,135 L-60,145 L-53,153 L-17,165 L-9,172 L32,202 L28,224 L50,237 L81,222 L134,247 L198,291 L221,321 L300,376 L330,409 L368,451 L483,490 L500,499 L506,504 L518,507 L523,514 L529,521 L532,524 L535,527 L536,532 L535,536 L539,542 L542,548 L558,576 L562,582 L572,592 L573,593 L573,596 L581,604 L591,611 L601,616 L607,620 L614,624 L617,625 L644,640 L650,643 L657,655 L665,660 L669,672 L655,674 L661,684 L679,681 L691,693 L693,690 L699,690 L700,684 L704,677 L731,661 L732,663 L739,668 L756,663 L766,656 L779,652 L782,649 L782,647 L822,650 L839,654 L841,651 L854,656 L866,657 L866,660 L878,661 L892,664 L911,667 L943,679 L954,682 L970,691 L978,701 L979,732 L982,748 L986,759 L986,774 L988,787 L1000,809 L1011,828 L1012,846 L1018,842 L1028,836 L1013,808 L1013,783 L1014,776 L1020,774 L1020,769 L1024,770 L1027,766 L1030,764 L1030,760 L1037,751 L1041,737 L1047,730 L1061,722 L1080,717 L1091,720 L1115,721 L1120,721 L1158,737 L1184,739 L1200,741 L1208,738 L1213,741 L1221,739 L1230,739 L1237,743 L1239,746 L1260,759 L1279,766 L1306,782 L1188,564 L1156,566 L1097,567 L1057,560 L1034,550 L998,544 L974,538 L953,535 L926,534 L915,529 L904,528 L902,522 L893,519 L891,516 L884,516 L874,509 L865,508 L856,505 L845,499 L838,494 L832,493 L827,492 L829,481 L828,471 L826,455 L822,446 L815,434 L817,430 L816,427 L821,420 L821,415 L817,412 L811,409 L820,392 L821,383 L819,376 L815,371 L808,370 L802,371 L799,376 L783,374 L781,367 L773,362 L758,360 L737,359 L722,344 L688,341 L663,362 L605,340 L578,330 L542,317 L494,298 L483,284 L473,270 L437,264 L412,248 L391,226 L372,205 L366,196 L344,175 L286,134 L272,109 L115,-18 L97,-43 L86,-59 L87,-65 L94,-70 L100,-74 L99,-81 L90,-84 L74,-83 L60,-84 L48,-95 L4,-147 L-21,-193 L-26,-202 L-58,-215 L-151,-256 L-260,-269 L-292,-288 L-472,-307 L-498,-332 L-539,-335 L-581,-331 L-580,-353 L-585,-360 L-598,-365 L-616,-364 L-617,-358 L-638,-355 L-661,-334 L-678,-310 L-707,-297 L-735,-290 L-750,-271 L-761,-272 L-766,-278 L-767,-294 L-776,-301 L-840,-278 L-859,-263 L-888,-252 L-915,-241 L-944,-233 L-1026,-246 L-1050,-245 L-1064,-241 L-1087,-245 L-1120,-236 L-1125,-231 L-1143,-233 L-1146,-240 L-1152,-241 L-1155,-241 L-1157,-239 L-1161,-240 L-1164,-238 L-1168,-239 L-1170,-237 L-1174,-236 L-1177,-240 L-1177,-245 L-1180,-248 L-1182,-252 L-1196,-255 L-1198,-255 L-1205,-249 L-1209,-251 L-1210,-254 L-1211,-260 L-1224,-265 L-1234,-270 L-1238,-271 L-1251,-276 L-1255,-274 L-1260,-274 L-1265,-274 L-1269,-279 L-1269,-285 L-1274,-288 L-1281,-288 L-1291,-285 L-1293,-270 L-1305,-275 L-1315,-284 L-1321,-291 L-1323,-292 L-1326,-294 L-1329,-294 L-1332,-299 L-1339,-302 L-1338,-304 L-1341,-304 L-1353,-306 L-1360,-304 L-1368,-302 L-1366,-300 L-1365,-296 L-1364,-291 L-1366,-287 L-1368,-287 L-1369,-287 L-1369,-289 L-1381,-293 L-1382,-293 L-1401,-298 L-1408,-300 L-1432,-304 L-1433,-300 L-1443,-304 L-1442,-307 L-1445,-307 L-1455,-311 L-1468,-316 L-1475,-317 L-1483,-319 L-1492,-320 L-1502,-320 L-1515,-325 L-1517,-326 L-1538,-334 L-1553,-341 L-1571,-349 L-1588,-356 L-1607,-362 L-1652,-375 L-1658,-374 L-1660,-373 L-1676,-371 L-1687,-371 L-1715,-375 L-1744,-378 L-1817,-390 L-1835,-393 L-1838,-393 L-1918,-406 L-1998,-420 L-2048,-429 L-2066,-442 L-2075,-453 L-2079,-456 L-2089,-460 L-2104,-466 L-2117,-472 L-2142,-490 L-2153,-501 L-2201,-538 L-2209,-540 L-2224,-549 L-2274,-596 L-2292,-598 L-2414,-700 L-2447,-722 L-2474,-731 L-2504,-761 L-2505,-778 L-2507,-783 L-2549,-802 L-2580,-811 L-2595,-813 L-2629,-819 L-2655,-824 L-2686,-830 L-2713,-836 L-2729,-845 L-2752,-852 L-2784,-867 L-2790,-870 L-2858,-894 L-2908,-893 L-2942,-909 L-2959,-943 L-2963,-954 L-2964,-955 L-2968,-963 L-2978,-973 L-2995,-970 L-3024,-948 L-3034,-942 L-3038,-946 L-3058,-952 L-3065,-938 L-3077,-930 L-3145,-959 L-3192,-978 L-3263,-1021 L-3372,-1101 L-3408,-1120 L-3444,-1127 L-3454,-1141 L-3458,-1158 L-3472,-1179 L-3483,-1180 L-3494,-1166 L-3508,-1165 L-3658,-1165 L-3690,-1153 L-3699,-1150 L-3718,-1152 L-3728,-1158 L-3736,-1162 L-3739,-1169 L-3750,-1167 L-3764,-1158 L-3764,-1150 L-3755,-1145 L-3739,-1142 L-3735,-1138 L-3732,-1134 L-3734,-1128 L-3740,-1122 L-3751,-1120 L-3758,-1123 L-3764,-1122 L-3773,-1119 L-3782,-1110 L-3790,-1096 L-3802,-1084 L-3817,-1074 L-3828,-1071 L-3856,-1065 L-3887,-1057 L-3912,-1052 L-3922,-1050 L-3921,-1048 L-3921,-1047 L-3929,-1046 L-3929,-1049 L-3940,-1047 L-3967,-1043 L-3995,-1040 L-4014,-1039 L-4026,-1038 L-4034,-1037 L-4048,-1035 L-4062,-1034 L-4077,-1033 L-4091,-1032 L-4110,-1032 L-4128,-1034 L-4149,-1038 L-4174,-1047 L-4186,-1052 L-4192,-1054 L-4198,-1057 L-4216,-1065 L-4227,-1072 L-4252,-1087 L-4275,-1104 L-4309,-1130 L-4323,-1140 L-4338,-1152 L-4382,-1187 L-4425,-1222 L-4454,-1245 L-4513,-1295 L-4573,-1344 L-4598,-1366 L-4600,-1368 L-4603,-1368 L-4618,-1385 L-4620,-1387ZM-3438,-978 L-3443,-983 L-3444,-987 L-3439,-990 L-3433,-990 L-3426,-989 L-3420,-986 L-3419,-983 L-3420,-979 L-3425,-977 L-3430,-977 L-3438,-978ZM-2638,-970 L-2639,-974 L-2641,-978 L-2649,-981 L-2658,-983 L-2670,-978 L-2676,-973 L-2677,-970 L-2677,-968 L-2675,-966 L-2673,-966 L-2670,-967 L-2667,-970 L-2661,-971 L-2657,-970 L-2655,-966 L-2655,-962 L-2654,-956 L-2650,-955 L-2646,-956 L-2638,-966 L-2638,-970ZM-939,215 L-945,218 L-948,223 L-949,234 L-945,240 L-940,242 L-936,245 L-930,247 L-920,255 L-912,264 L-906,273 L-902,276 L-897,278 L-893,280 L-888,280 L-885,284 L-881,295 L-886,298 L-889,303 L-889,310 L-880,322 L-875,325 L-863,330 L-859,334 L-858,340 L-858,349 L-857,357 L-854,368 L-853,376 L-853,388 L-852,393 L-853,399 L-853,401 L-850,403 L-847,402 L-844,397 L-844,387 L-847,386 L-846,380 L-846,373 L-842,365 L-841,357 L-840,351 L-840,346 L-844,337 L-848,332 L-854,327 L-857,319 L-859,317 L-860,320 L-863,322 L-866,322 L-867,320 L-870,311 L-872,303 L-870,302 L-868,300 L-865,302 L-861,304 L-858,305 L-856,310 L-855,313 L-856,315 L-853,316 L-852,312 L-852,309 L-852,304 L-854,296 L-856,292 L-861,289 L-865,289 L-867,290 L-869,292 L-872,292 L-875,292 L-878,292 L-885,280 L-885,271 L-888,264 L-904,252 L-912,244 L-920,227 L-926,220 L-934,216 L-939,215ZM1203,-1104 L1205,-1110 L1202,-1118 L1195,-1126 L1182,-1134 L1171,-1139 L1158,-1142 L1145,-1141 L1130,-1131 L1109,-1118 L1082,-1096 L1074,-1085 L1072,-1080 L1075,-1076 L1085,-1077 L1100,-1079 L1122,-1085 L1141,-1090 L1161,-1092 L1179,-1094 L1194,-1100 L1203,-1104ZM1017,-757 L1028,-772 L1036,-782 L1045,-800 L1034,-811 L1022,-810 L1008,-796 L1000,-783 L1008,-756 L1012,-754 L1017,-757ZM999,-502 L1003,-513 L989,-513 L984,-498 L999,-502ZM931,-434 L942,-441 L941,-449 L927,-450 L915,-443 L920,-435 L931,-434ZM792,-148 L778,-135 L768,-104 L760,-65 L763,-56 L775,-54 L793,-52 L792,-68 L793,-127 L792,-148ZM2374,-586 L2371,-584 L2365,-575 L2363,-561 L2364,-550 L2376,-543 L2386,-538 L2397,-538 L2401,-545 L2400,-551 L2398,-556 L2388,-569 L2386,-579 L2383,-582 L2374,-586ZM507,-775 L492,-774 L480,-772 L472,-768 L472,-761 L483,-757 L495,-759 L509,-766 L507,-775ZM1014,-234 L1009,-235 L1002,-232 L1004,-222 L1010,-219 L1013,-219 L1014,-223 L1014,-234ZM1588,333 L1573,311 L1567,279 L1563,268 L1557,261 L1551,265 L1551,282 L1559,305 L1558,322 L1564,332 L1571,336 L1588,333ZM-884,-21 L-886,-23 L-887,-23 L-887,-23 L-888,-23 L-889,-24 L-890,-25 L-890,-25 L-891,-26 L-892,-26 L-893,-27 L-894,-26 L-896,-26 L-897,-26 L-898,-24 L-898,-23 L-899,-22 L-899,-20 L-900,-19 L-899,-18 L-899,-16 L-900,-14 L-900,-12 L-900,-11 L-901,-10 L-903,-7 L-904,-4 L-903,-3 L-903,-2 L-902,-1 L-902,1 L-901,2 L-900,2 L-899,3 L-898,2 L-899,1 L-899,0 L-900,-1 L-899,-2 L-898,-3 L-898,-4 L-896,-5 L-896,-5 L-896,-6 L-896,-7 L-896,-8 L-895,-10 L-895,-11 L-894,-11 L-893,-11 L-892,-10 L-891,-11 L-890,-12 L-890,-12 L-890,-13 L-889,-14 L-887,-14 L-887,-14 L-886,-15 L-886,-16 L-885,-17 L-884,-18 L-884,-20 L-884,-21ZM1994,-772 L1996,-778 L1994,-784 L1990,-796 L1983,-805 L1976,-815 L1969,-820 L1960,-819 L1935,-814 L1922,-808 L1910,-798 L1908,-789 L1915,-772 L1926,-760 L1942,-754 L1960,-758 L1980,-764 L1988,-767 L1994,-772ZM1966,-638 L1984,-654 L1989,-669 L1992,-694 L1994,-723 L1996,-746 L1996,-755 L1973,-750 L1957,-746 L1958,-729 L1962,-708 L1962,-692 L1958,-673 L1957,-658 L1956,-646 L1966,-638ZM611,-6 L610,-14 L599,-19 L576,-25 L574,-20 L579,23 L586,68 L619,65 L611,-6ZM2801,845 L2800,842 L2798,844 L2796,844 L2795,846 L2796,848 L2796,851 L2799,851 L2802,852 L2801,855 L2804,855 L2805,853 L2809,854 L2810,855 L2812,855 L2979,848 L2985,852 L2985,868 L2980,871 L2839,875 L2834,870 L2831,876 L2838,882 L2844,895 L2847,889 L2842,885 L2843,882 L2845,882 L2848,878 L2854,880 L2930,882 L2934,891 L2902,978 L2864,966 L2863,963 L2861,963 L2860,970 L2863,974 L2867,976 L2878,982 L2903,987 L2912,1073 L2917,1097 L2920,1119 L2918,1129 L2919,1144 L2922,1148 L2937,1161 L2936,1166 L2893,1198 L2870,1222 L2850,1247 L2839,1263 L2799,1246 L2797,1250 L2849,1272 L2885,1224 L2897,1212 L2900,1211 L2902,1209 L2902,1208 L2938,1179 L2958,1173 L2968,1172 L2975,1174 L2978,1176 L2980,1173 L2974,1169 L2959,1163 L2958,1160 L2955,1159 L2953,1159 L2950,1161 L2929,1138 L2927,1126 L2930,1115 L2911,1008 L2913,992 L2920,989 L2923,979 L2918,978 L2912,979 L2912,977 L2911,975 L2922,946 L2932,943 L2966,958 L2966,962 L2976,966 L2980,960 L2978,956 L2963,942 L2959,936 L2956,927 L2958,915 L2962,907 L2969,902 L2978,900 L2986,897 L2992,893 L2995,892 L2994,886 L2989,881 L2990,878 L2995,872 L2994,842 L2978,840 L2802,847 L2801,845ZM3030,757 L3026,753 L3021,759 L3018,761 L3010,773 L2996,806 L2972,810 L2927,816 L2922,814 L2913,815 L2908,819 L2904,819 L2899,816 L2840,818 L2822,819 L2804,820 L2793,821 L2787,824 L2767,826 L2777,837 L2787,835 L2791,829 L2896,824 L2897,825 L2902,826 L2905,823 L2997,820 L3030,757ZM3014,744 L2989,721 L2972,716 L2953,724 L2913,709 L2896,713 L2858,691 L2846,690 L2838,694 L2808,718 L2800,718 L2792,721 L2785,738 L2796,751 L2801,752 L2805,748 L2806,725 L2810,722 L2817,719 L2818,723 L2850,716 L2872,721 L2874,727 L2891,726 L2918,727 L2925,726 L2935,728 L2953,734 L2972,744 L2997,772 L3002,769 L3013,750 L3014,744ZM2056,95 L2051,89 L2043,86 L2037,91 L2035,100 L2040,110 L2049,117 L2057,132 L2060,136 L2065,138 L2068,139 L2075,139 L2077,141 L2078,143 L2082,141 L2080,138 L2080,136 L2077,133 L2072,130 L2066,126 L2061,124 L2060,116 L2059,106 L2056,95ZM-1363,-1525 L-1367,-1529 L-1369,-1534 L-1401,-1485 L-1650,-1097 L-1653,-1083 L-1654,-1040 L-1632,-964 L-1616,-912 L-1604,-860 L-1598,-833 L-1595,-786 L-1596,-756 L-1600,-732 L-1609,-713 L-1617,-644 L-1624,-613 L-1658,-528 L-1666,-498 L-1665,-483 L-1669,-469 L-1665,-447 L-1665,-432 L-1661,-429 L-1659,-426 L-1657,-399 L-1660,-373 L-1658,-374 L-1652,-375 L-1649,-398 L-1646,-416 L-1644,-430 L-1651,-454 L-1660,-471 L-1655,-491 L-1652,-511 L-1647,-531 L-1617,-612 L-1608,-624 L-1600,-701 L-1592,-729 L-1587,-761 L-1586,-794 L-1589,-844 L-1596,-884 L-1645,-1043 L-1641,-1093 L-1363,-1525ZM1271,-813 L1260,-815 L1251,-814 L1242,-808 L1250,-800 L1266,-795 L1272,-795 L1277,-801 L1275,-809 L1271,-813ZM-974,57 L-985,48 L-985,42 L-989,43 L-992,42 L-988,50 L-979,58 L-975,70 L-971,73 L-968,77 L-964,86 L-962,94 L-961,104 L-958,107 L-959,90 L-957,85 L-954,84 L-952,86 L-951,87 L-948,86 L-946,84 L-946,83 L-946,81 L-946,80 L-947,79 L-949,78 L-951,78 L-953,80 L-955,82 L-958,82 L-962,85 L-973,65 L-974,57ZM-1148,166 L-1181,158 L-1186,178 L-1153,186 L-1148,166ZM-802,700 L-802,701 L-801,702 L-801,711 L-774,738 L-754,760 L-727,784 L-716,796 L-708,804 L-701,805 L-692,804 L-693,799 L-698,792 L-710,780 L-722,768 L-740,750 L-758,732 L-779,711 L-785,704 L-786,702 L-790,700 L-793,699 L-798,700 L-800,699 L-802,700ZM-792,-81 L-794,-82 L-797,-81 L-803,-78 L-807,-74 L-809,-69 L-806,-63 L-802,-61 L-798,-64 L-792,-72 L-791,-76 L-791,-80 L-792,-81ZM-2435,-912 L-2441,-915 L-2447,-920 L-2449,-914 L-2443,-910 L-2438,-905 L-2435,-912ZM1820,-975 L1829,-972 L1848,-978 L1864,-984 L1870,-989 L1889,-996 L1911,-1005 L1932,-1013 L1950,-1019 L1961,-1023 L1967,-1027 L1967,-1031 L1948,-1031 L1932,-1031 L1917,-1030 L1906,-1030 L1884,-1037 L1865,-1042 L1853,-1044 L1834,-1042 L1822,-1039 L1817,-1035 L1821,-1013 L1821,-999 L1819,-984 L1819,-977 L1820,-975ZM717,267 L710,267 L707,273 L704,288 L705,293 L713,305 L723,308 L725,299 L722,287 L724,275 L717,267ZM-1268,-1087 L-1270,-1091 L-1274,-1091 L-1277,-1088 L-1283,-1082 L-1289,-1070 L-1292,-1045 L-1294,-1034 L-1287,-1046 L-1275,-1064 L-1270,-1073 L-1268,-1087Z","ponts":[{"w":26,"p":[[-1576,-191],[-1529,-313],[-1501,-387]],"n":"Périphérique Extérieur - Pont de la Beaujoire"},{"w":26,"p":[[-1508,-390],[-1540,-308],[-1584,-194]],"n":"Périphérique Intérieur - Pont de la Beaujoire"},{"w":30,"p":[[579,264],[645,788]],"n":"L’Océane"},{"w":30,"p":[[654,785],[589,268]],"n":"L’Océane"},{"w":10,"p":[[-1609,-214],[-1536,-391]],"n":"Pont de la Jonelière"},{"w":16,"p":[[-1613,-216],[-1540,-392]],"n":"Ligne de Nantes-Orléans à Châteaubriant"},{"w":12,"p":[[-1616,-218],[-1544,-393]],"n":"Ligne 1"}],"labels":[{"p":[-1715,225],"n":"Ponts de la Jonelière et de la Beaujoire"},{"p":[756,169],"n":"Pont de l’autoroute A11"}]};
+let trace = null, pions = new Map();
+const NS = "http://www.w3.org/2000/svg";
+const el = (n, a = {}, txt) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; return e; };
+
+function initCarte() {
+  const t = PLAN.trace, c = [0];
+  for (let i = 1; i < t.length; i++) c.push(c[i - 1] + Math.hypot(t[i][0] - t[i - 1][0], t[i][1] - t[i - 1][1]));
+  trace = { t, c };
+  const xs = t.map(p => p[0]), ys = t.map(p => p[1]), m = 110;
+  const x0 = Math.min(...xs) - m, y0 = Math.min(...ys) - m - 140, w = Math.max(...xs) - x0 + m, h = Math.max(...ys) - y0 + m + 170;   // place en haut et en bas pour les étiquettes et pastilles décalées
+  const svg = el("svg", { viewBox: `${x0} ${y0} ${w} ${h}`, role: "img", "aria-label": "Plan du parcours avec la position des bateaux" });
+  svg.append(el("path", { class: "eau", d: PLAN.eau }));
+  PLAN.ponts.forEach(p => svg.append(el("polyline", { class: "pont-halo", "stroke-width": p.w + 16, points: p.p.join(" ") })));
+  PLAN.ponts.forEach(p => { const l = el("polyline", { class: "pont", "stroke-width": p.w + 4, points: p.p.join(" ") }); l.append(el("title", {}, p.n)); svg.append(l); });
+  svg.append(el("polyline", { class: "trace", points: t.join(" ") }));
+  // Parc à bateaux et pontons d'embarquement / débarquement (d'après le plan)
+  const pc = el("g", { class: "parc" }), [px, py] = PARC;
+  pc.append(el("path", { d: `M${px},${py} L${px},${py + 120}` }), el("circle", { cx: px, cy: py, r: 22 }),
+    el("rect", { x: px - 290, y: py + 120, width: 580, height: 62, rx: 6 }), el("text", { x: px, y: py + 164, "text-anchor": "middle" }, "Parc à bateaux · pontons"));
+  svg.append(pc);
+  // Points de chronométrage prévus (plan de la HoN)
+  // Un point orange par distance, posé sur sa voie (aller ou retour) ; l'étiquette est
+  // écartée vers l'extérieur, du côté opposé à l'autre voie.
+  const pointPrevu = (d, [x, y], [ux, uy]) => {
+    const g = el("g", { class: "inter" });
+    g.append(el("circle", { cx: x, cy: y, r: 20 }), el("text", { x: x + ux * 95, y: y + uy * 95 + 14, "text-anchor": "middle" }, d + " m"));
+    svg.append(g);
+  };
+  POINTS_PREVUS.forEach(([a, b, cote]) => {
+    const pa = surCarte(a);
+    if (b == null) return pointPrevu(a, pa, [0, cote]);
+    const pb = surCarte(b), n = Math.hypot(pa[0] - pb[0], pa[1] - pb[1]) || 1, u = [(pa[0] - pb[0]) / n, (pa[1] - pb[1]) / n];
+    pointPrevu(a, pa, u); pointPrevu(b, pb, [-u[0], -u[1]]);
+  });
+  // Étiquettes : Départ posé sur la berge (sous le parcours) et relié par un trait ; Arrivée au-dessus
+  [[0, "Départ", 260], [LONGUEUR, "Arrivée", -130]].forEach(([d, txt, dy]) => {
+    const [x, y] = surCarte(d), g = el("g", { class: "borne" }), lg = txt.length * 28 + 28;
+    if (dy > 0) g.append(el("line", { x1: x, y1: y, x2: x, y2: y + dy, stroke: "#d4a53f", "stroke-width": 7 }), el("circle", { cx: x, cy: y, r: 16, fill: "#d4a53f" }));
+    g.append(el("rect", { x: x - lg / 2, y: y + dy, width: lg, height: 62, rx: 6 }), el("text", { x, y: y + dy + 46, "text-anchor": "middle" }, txt));
+    svg.append(g);
+  });
+  const couche = el("g"); svg.append(couche); trace.couche = couche;
+  $("carte").innerHTML = ""; $("carte").append(svg); $("carte").hidden = false;
+  $("carte-info").textContent = "Plan du parcours de la Head of Nantes, nord à droite. Positions estimées comme ci-dessous ; cliquez sur un bateau pour voir ses temps.";
+  dessiner();
+}
+// Parc à bateaux et points de chronométrage prévus, repris du plan de la HoN (mêmes coordonnées que PLAN).
+// Distances parcourues données par Vincent (27/11/2026) ; deux distances quand le point est passé à l'aller et au retour.
+const PARC = [-1235, 20];
+const POINTS_PREVUS = [[950, 4950], [1800, 4150], [2800, 3115], [5800, null, -1], [7150, null, -1]];   // [aller, retour] ou [distance, null, étiquette dessous 1 / dessus -1]   // même poste : aller et retour
+// Recalage : distance de course (m) -> position sur le tracé dessiné, pour que les bateaux
+// passent sur les points de chrono du plan au bon moment. Entre deux repères : proportionnel.
+const DEMI_TOUR = 2950;   // distance du demi-tour (m), entre les points 2800 m et 3115 m
+const RECALAGE = [[0, 0], [950, 930], [1800, 1796], [2800, 2763], [3115, 3097], [4150, 4089], [4950, 4882], [5800, 5800], [7150, 7098], [8000, 7970]];
+function surTrace(m) {
+  m = Math.max(0, Math.min(LONGUEUR, m));
+  for (let i = 1; i < RECALAGE.length; i++) {
+    const [a0, b0] = RECALAGE[i - 1], [a1, b1] = RECALAGE[i];
+    if (m <= a1) return b0 + (b1 - b0) * (m - a0) / (a1 - a0);
+  }
+  return RECALAGE[RECALAGE.length - 1][1];
+}
+function surCarte(m) {   // point situé à m mètres du départ, le long du tracé
+  const { t, c } = trace; m = Math.max(0, Math.min(c[c.length - 1], surTrace(m) * c[c.length - 1] / 7970));
+  let i = 1; while (i < c.length - 1 && c[i] < m) i++;
+  const f = (m - c[i - 1]) / ((c[i] - c[i - 1]) || 1);
+  return [t[i - 1][0] + (t[i][0] - t[i - 1][0]) * f, t[i - 1][1] + (t[i][1] - t[i - 1][1]) * f];
+}
+
+// Place les pions (numéro = dossard ; le premier en or) ; appelé à chaque dessin.
+// Quand des bateaux se chevauchent, leur pastille est décalée (au-dessus ou en dessous)
+// et reliée par un trait au point exact où se trouve le bateau.
+function majCarte(liste) {
+  if (!trace) return;
+  const presents = new Set(), posees = [], ECART = 112;
+  liste.slice().sort((a, b) => a.rang - b.rang).forEach(({ b, m, rang, arrive }) => {   // le premier placé d'abord, il reste sur le parcours
+    const d = b.e.dossard; presents.add(d);
+    let pion = pions.get(d);
+    if (!pion) {
+      pion = el("g", { class: "pion" });
+      const bulle = el("g", { class: "bulle" }); bulle.append(el("circle", { r: 52 }), el("text"));
+      pion.append(el("line", { class: "lien" }), el("circle", { class: "point", r: 16 }), bulle, el("title", {}, `N°${d} · ${b.e.club || b.e.equipage}${b.e.nage ? " · " + b.e.nage : ""}`));
+      pion.addEventListener("click", () => { selection = d; dessiner(); fiche(); });
+      pions.set(d, pion);
+    }
+    const [x, y] = surCarte(m);
+    // À l'aller (avant le demi-tour) les pastilles se décalent vers le bas, au retour vers le haut :
+    // elles s'écartent ainsi de l'autre voie.
+    const sens = m < DEMI_TOUR ? 1 : -1;
+    // Places essayées : sur le bateau, puis une rangée décalée (au centre, puis de part et d'autre), puis une 2e rangée…
+    let dx = 0, dy = 0;
+    const libre = (a, b) => !posees.some(([qx, qy]) => Math.hypot(qx - (x + a), qy - (y + b)) < ECART);
+    if (!libre(0, 0)) chercher: for (let rg = 1; rg < 6; rg++) for (const col of [0, -1, 1, -2, 2]) {
+      const a = col * ECART * 1.05, b = sens * rg * ECART * 1.1;
+      if (libre(a, b)) { dx = a; dy = b; break chercher; }
+    }
+    posees.push([x + dx, y + dy]);
+    pion.setAttribute("transform", `translate(${x.toFixed(1)},${y.toFixed(1)})`);
+    pion.setAttribute("class", "pion" + (rang === 0 ? " n1" : "") + (arrive ? " arrive" : "") + (selection === d ? " choisi" : ""));
+    pion._dy = dy || dx; pion._rang = rang;
+    const bulle = pion.querySelector(".bulle"), lien = pion.querySelector(".lien");
+    bulle.setAttribute("transform", `translate(${dx.toFixed(1)},${dy.toFixed(1)})`);
+    lien.setAttribute("x2", dx); lien.setAttribute("y2", dy); lien.style.display = pion.querySelector(".point").style.display = dy || dx ? "" : "none";
+    const txt = bulle.querySelector("text");   // numéro (dossard) du bateau dans le cercle
+    txt.textContent = d; txt.style.fontSize = d.length > 2 ? "42px" : "";
+  });
+  // Empilement : pastilles décalées dessous, puis les autres ; le premier tout au-dessus
+  [...pions.entries()].filter(([d]) => presents.has(d)).sort((a, b) => (b[1]._dy !== 0) - (a[1]._dy !== 0) || b[1]._rang - a[1]._rang).forEach(([, p]) => trace.couche.append(p));
+  for (const [d, pion] of pions) if (!presents.has(d)) { pion.remove(); pions.delete(d); }
+}
+
+function dessiner() {
+  if (mode === "direct") return dessinerDirect();
+  const actifs = bateaux.filter(b => b.jalons.length > 1);
+  if (!actifs.length) { $("bassin").innerHTML = `<div class="message">Pas encore de temps de passage dans cette catégorie.</div>`; return; }
+  const pos = actifs.map(b => ({ b, m: position(b, T), arrive: b.fini && T >= b.jalons[b.jalons.length - 1][0] }));
+  // Classement à l'instant T : arrivés d'abord (au temps), puis les plus avancés
+  pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.b.jalons[a.b.jalons.length - 1][0] - c.b.jalons[c.b.jalons.length - 1][0] : c.m - a.m));
+  pos.forEach((p, k) => { p.rang = k; });
+  majCarte(pos.map(p => ({ b: p.b, m: p.m, rang: p.rang, arrive: p.arrive })));
+  const lead = pos[0];
+  pos.sort((a, c) => (c.arrive - a.arrive) || (a.arrive ? a.rang - c.rang : a.b.idx - c.b.idx));   // arrivés classés en haut, les autres gardent leur ligne
+  const tete = lead ? lead.m : 0;
+  const reperes = intermediaires().map(m => `<i class="repere" style="left:${m / LONGUEUR * 100}%"></i>`).join("") + `<i class="repere fin" style="left:100%"></i>`;
+  $("bassin").innerHTML = `<div class="regle"><span></span><span>Équipage</span><div class="eau" style="height:14px">${graduations()}</div><span style="text-align:right;padding-right:10px">Écart</span></div>`
+    + pos.map((p, _k, _t, i = p.rang) => {
+      const e = p.b.e, der = p.b.jalons[p.b.jalons.length - 1];
+      const meilleur = Math.min(...pos.filter(q => q.b.jalons.some(j => j[1] === der[1])).map(q => q.b.jalons.find(j => j[1] === der[1])[0]));
+      const ecartDirect = (der[1] >= LONGUEUR ? "" : der[1] + " m · ") + (der[0] - meilleur < 0.05 ? "1er" : "+" + fin1(der[0] - meilleur));
+      const ecart = mode === "direct" ? ecartDirect : i === 0 ? "en tête" : p.arrive && lead.arrive ? "+" + fin1(p.b.jalons[p.b.jalons.length - 1][0] - lead.b.jalons[lead.b.jalons.length - 1][0]) : "-" + Math.round(tete - p.m) + " m";
+      const cls = p.arrive ? "arrive" : i === 0 ? "tete" : "";
+      return `<div class="ligne${selection === e.dossard ? " choisi" : ""}" data-d="${esc(e.dossard)}">
+        <span class="rg">${i + 1}</span>
+        <span class="nom">N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}<small>${esc(e.nage || e.equipage)}</small></span>
+        <div class="eau">${reperes}<i class="bateau ${cls}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%"></i><b class="num-bateau${i === 0 ? " n1" : ""}" style="left:${Math.max(p.m / LONGUEUR * 100, 2.5)}%">${i + 1}</b></div>
+        <span class="ecart${i === 0 ? " t1" : ""}">${esc(ecart)}</span></div>`;
+    }).join("");
+  $("chrono").textContent = mmss(T);
+  $("curseur").value = Math.round(T / Tmax * 1000);
+}
+
+function fiche() {
+  const b = bateaux.find(x => x.e.dossard === selection);
+  if (!b) { $("fiche").innerHTML = ""; return; }
+  const e = b.e, pts = donnees.points;
+  const lignes = pts.map((p, k) => {
+    const t = e.temps && e.temps[p.id];
+    if (!t) return `<tr><td>${esc(p.label)}</td><td>–</td><td></td><td></td></tr>`;
+    const s = secondes(t.temps); let tr = "";
+    for (let i = k - 1; i >= -1; i--) { const av = i < 0 ? { temps: "0:00" } : e.temps[pts[i].id]; if (av) { tr = fin1(s - secondes(av.temps)); break; } }
+    return `<tr><td>${esc(p.label)}</td><td><b style="font:700 16px var(--texte)">${esc(t.temps)}</b></td><td>${esc(t.rang ? t.rang + (t.rang === 1 ? "er" : "e") : "")}</td><td>(${esc(tr)})</td></tr>`;
+  }).join("");
+  $("fiche").innerHTML = `<div class="fiche"><b>N°${esc(e.dossard)} · ${esc(e.club || e.equipage)}</b> <span style="color:var(--brume)">${esc([e.equipage, e.nage].filter(Boolean).join(" · "))}</span>
+    <table><tr><th>Point</th><th>Temps</th><th>Place</th><th>Tronçon</th></tr>${lignes}</table></div>`;
+}
+
+function boucle(now) {
+  if (!enCours) return;
+  const dt = dernierCadre ? (now - dernierCadre) / 1000 : 0;
+  dernierCadre = now;
+  T = Math.min(Tmax, T + dt * vitesse);
+  dessiner();
+  if (T >= Tmax) { pause(); return; }
+  requestAnimationFrame(boucle);
+}
+function jouer() { if (T >= Tmax) T = 0; enCours = true; dernierCadre = 0; $("jouer").textContent = "❚❚ Pause"; requestAnimationFrame(boucle); }
+function pause() { enCours = false; $("jouer").textContent = "▶ Lancer"; }
+// Clic sur une ligne (écouté sur le bassin, car les lignes sont redessinées pendant l'animation)
+$("bassin").addEventListener("pointerdown", ev => {
+  const l = ev.target.closest(".ligne"); if (!l) return;
+  selection = l.dataset.d; dessiner(); fiche();
+});
+function changerMode(m) {
+  mode = m; pause();
+  $("m-direct").setAttribute("aria-pressed", m === "direct"); $("m-rejouer").setAttribute("aria-pressed", m === "rejouer");
+  $("commandes").hidden = $("lecture").hidden = m === "direct";
+  T = Tmax;
+  clearInterval(horloge);
+  if (m === "direct") horloge = setInterval(dessiner, 400);   // les bateaux avancent en continu
+  dessiner();
+}
+$("m-direct").onclick = () => changerMode("direct");
+$("m-rejouer").onclick = () => { changerMode("rejouer"); T = 0; jouer(); };   // « Rejouer » relance tout de suite la course
+$("jouer").onclick = () => enCours ? pause() : jouer();
+$("zero").onclick = () => { T = 0; dessiner(); };
+$("curseur").oninput = () => { T = $("curseur").value / 1000 * Tmax; dessiner(); };
+document.querySelectorAll("[data-v]").forEach(b => b.onclick = () => {
+  vitesse = +b.dataset.v; document.querySelectorAll("[data-v]").forEach(x => x.setAttribute("aria-pressed", x === b));
+});
+
+async function charger(garderT) {
+  clearTimeout(minuterie);
+  try {
+    const d = await lire("event=" + encodeURIComponent(choix));
+    const ancienMax = Tmax;
+    preparer(d);
+    if (!garderT) { T = Tmax; }   // à l'ouverture : on montre l'état final, puis « Lancer » rejoue la course
+    else if (!enCours && T >= ancienMax - 5) T = Tmax;
+    const enEau = d.equipages.filter(e => e.etat === "course").length;
+    $("note").textContent = `${d.equipages.filter(e => e.etat === "arrive").length} arrivés · ${enEau} en course · ${d.equipages.length} inscrits. Temps relus toutes les 10 s.`
+      + " En direct, chaque bateau avance à sa vitesse moyenne depuis le départ, recalculée à chaque passage (au départ : vitesse moyenne de la catégorie) et se recale à chaque nouveau temps ;"
+      + " il s'arrête juste avant le point de passage suivant tant que son temps n'est pas arrivé. Les places « ≈ » sont estimées d'après le temps final projeté."
+      + " « Rejouer » relance la course avec tous les bateaux partis ensemble.";
+    dessiner(); fiche();
+  } catch (e) {
+    $("bassin").innerHTML = `<div class="message">Temps indisponibles pour le moment, nouvel essai dans 20 s…</div>`;
+  }
+  minuterie = setTimeout(() => charger(true), mode === "direct" ? 10000 : 20000);
+}
+
+(async () => {
+  try { epreuves = await lire("liste"); if (!Array.isArray(epreuves) || !epreuves.length) throw new Error("liste vide"); }
+  catch (e) { demo = true; epreuves = DEMO.liste(); $("demo").hidden = false; }
+  const p = new URLSearchParams(location.search).get("epreuve");
+  choix = epreuves.some(x => x.id === p) ? p : epreuves[0].id;
+  $("categorie").innerHTML = epreuves.map(ep => `<option value="${esc(ep.id)}"${ep.id === choix ? " selected" : ""}>${esc(ep.code)} · ${esc(ep.nom)}</option>`).join("");
+  $("categorie").onchange = () => { for (const p of pions.values()) p.remove(); pions.clear(); choix = $("categorie").value; vus = new Map(); premiereLecture = true; selection = null; pause(); history.replaceState(null, "", "?epreuve=" + choix); charger(false); };
+  await charger(false);
+  changerMode("direct");
+  try { initCarte(); } catch (e) { $("carte").hidden = true; }
+})();
+
+/* ========= Mode démonstration =========
+   Utilisé seulement si connecteur.php ne répond pas (aperçu, test sur ordinateur).
+   Même démo que la page des temps, mais en temps réel (vitesse ×1) pour le mode « En direct ».
+   Produit des données au même format que le connecteur. */
+const DEMO = (() => {
+  const EPREUVES = [
+    { id: "d-sh8", code: "SH8+", nom: "Huit barré Senior Homme", base: 1560 },
+    { id: "d-sf8", code: "SF8+", nom: "Huit barré Senior Femme", base: 1740 },
+    { id: "d-sh4", code: "SH4x", nom: "Quatre de couple Senior Homme", base: 1620 },
+    { id: "d-sh2", code: "SH2x", nom: "Deux de couple Senior Homme", base: 1800 },
+  ];
+  const CLUBS = [
+    ["Cercle de l'Aviron de Nantes", "CAN"], ["Aviron Nantais", "AN"], ["SN Angers", "SNA"], ["Aviron Bayonnais", "AB"],
+    ["Cercle Nautique de Verdun", "CNVD"], ["Lyon Aviron Union Nautique", "LAUN"], ["Aviron Toulousain", "AT"], ["SN Compiègne", "SNC"],
+    ["Rowing Club de Strasbourg", "RCS"], ["Aviron Grenoblois", "AG"], ["Aviron Club de Nice", "ACN"], ["Tees Rowing Club", "TRC"],
+  ];
+  const NAGES = ["Louis MARTIN", "Hugo BERNARD", "Emma PETIT", "Léa DUBOIS", "Jules MOREAU", "Chloé LAURENT", "Tom GIRARD", "Manon ROUX", "Paul FOURNIER", "Inès MOREL"];
+  const POINTS = [2000, 4000, 6000].map(m => ({ id: "p" + m, label: m + "m" })).concat([{ id: "arr", label: "Arrivée" }]);
+  const VITESSE = 1;
+  let s = 7;
+  const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const equipages = [];
+  let dossard = 1;
+  EPREUVES.forEach(ep => {
+    let rangDepart = 0;
+    CLUBS.slice().sort(() => r() - .5).slice(0, 8).forEach(c => {
+      const total = ep.base * (0.95 + r() * 0.1);
+      const segments = POINTS.map(() => 1 + (r() - .5) * 0.08), somme = segments.reduce((a, b) => a + b);
+      let cumul = 0;
+      const passages = Object.fromEntries(POINTS.map((p, i) => [p.id, total * (cumul += segments[i]) / somme]));
+      equipages.push({ ep: ep.id, dossard: String(dossard), depart: (rangDepart++) * 15, ordre: rangDepart, club: c[1], equipage: c[0] + (ep.code.includes("8") ? "" : " " + (1 + Math.floor(r() * 2))),
+        nage: NAGES[Math.floor(r() * NAGES.length)], passages });
+      dossard++;
+    });
+  });
+  const fin = Math.max(...equipages.map(e => e.depart + e.passages.arr)) + 240;
+  let t0 = Date.now();
+  const debut = 14 * 60;   // la démo s'ouvre 14 min après le premier départ
+  const fmt = sec => { const m = Math.floor(sec / 60); return `${m}:${(sec - m * 60).toFixed(2).padStart(5, "0")}`; };
+  const fmtEcart = sec => sec < 60 ? sec.toFixed(2) : fmt(sec);
+  return {
+    liste: () => EPREUVES.map(({ id, code, nom }) => ({ id, code, nom })),
+    epreuve(id) {
+      let now = debut + (Date.now() - t0) / 1000 * VITESSE;
+      if (now > fin) { t0 = Date.now(); now = debut; vus = new Map(); premiereLecture = true; }
+      const ep = EPREUVES.find(x => x.id === id);
+      const liste = equipages.filter(e => e.ep === id);
+      const temps = new Map(liste.map(e => [e, {}]));
+      POINTS.forEach(p => {
+        const passes = liste.filter(e => now - e.depart >= e.passages[p.id]).sort((a, b) => a.passages[p.id] - b.passages[p.id]);
+        passes.forEach((e, i) => temps.get(e)[p.id] = { temps: fmt(e.passages[p.id]), rang: i + 1, ecart: i ? "+" + fmtEcart(e.passages[p.id] - passes[0].passages[p.id]) : null });
+      });
+      return {
+        heure: Math.floor(Date.now() / 1000),
+        evenement: { id, code: ep.code, nom: ep.nom },
+        departMs: t0 - debut * 1000,
+        points: POINTS,
+        equipages: liste.map(e => {
+          const t = temps.get(e);
+          return { dossard: e.dossard, ordre: e.ordre, equipage: e.equipage, club: e.club, nage: e.nage, temps: t,
+            etat: t.arr ? "arrive" : now >= e.depart ? "course" : "attente" };
+        }),
+      };
+    },
+  };
+})();
+
+</script>
+</body>
+</html>
